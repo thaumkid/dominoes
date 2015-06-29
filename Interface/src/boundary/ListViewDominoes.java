@@ -1,5 +1,9 @@
 package boundary;
 
+/*
+ * drag and drop adapted from https://gist.github.com/jewelsea/7821196
+ */
+
 import domain.Configuration;
 import domain.Dominoes;
 
@@ -8,8 +12,6 @@ import java.util.ArrayList;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.scene.Cursor;
 import javafx.scene.Group;
 import javafx.scene.control.ContextMenu;
@@ -20,7 +22,7 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.shape.Shape;
 
-@SuppressWarnings("restriction")
+//@SuppressWarnings("restriction")
 public class ListViewDominoes extends ListView<Group> {
 
     private ObservableList<Group> pieces;
@@ -73,13 +75,23 @@ public class ListViewDominoes extends ListView<Group> {
             return result;
         }
 
-        ContextMenu minimenu = new ContextMenu();
-        MenuItem menuItemToAreaMove = new MenuItem("Copy To Area Move");
-        MenuItem menuItemRemove = new MenuItem("Remove");
-
         Group group = domino.drawDominoes();
         group.getChildren().get(Dominoes.GRAPH_HISTORIC).setVisible(visibilityHistoric);
+        
+        // TODO do we really need handlers for every item in the list? Can't we push this up a level?
+        addMouseHandlers(domino, group);
+        addMenuHandlers(group);
+        
 
+        this.dominoes.add(domino);
+
+        this.pieces.add(group);
+
+        result = true;
+        return result;
+    }
+    
+	private void addMouseHandlers(Dominoes domino, Group group) {
         Tooltip tooltip = new Tooltip(domino.getMat().getMatrixDescriptor().getRowType()
         		+ " x "
         		+ domino.getMat().getMatrixDescriptor().getColType()
@@ -89,111 +101,68 @@ public class ListViewDominoes extends ListView<Group> {
         		+ domino.getMat().getMatrixDescriptor().getNumCols());
         Tooltip.install(group, tooltip);
 
-        group.setOnMouseEntered(new EventHandler<MouseEvent>() {
-
-            @Override
-            public void handle(MouseEvent event) {
-                cursorProperty().set(Cursor.OPEN_HAND);
-            }
-        });
-        group.setOnMousePressed(new EventHandler<MouseEvent>() {
-
-            @Override
-            public void handle(MouseEvent event) {
-                cursorProperty().set(Cursor.CLOSED_HAND);
-            }
-        });
-        group.setOnMouseReleased(new EventHandler<MouseEvent>() {
-
-            @Override
-            public void handle(MouseEvent event) {
-                if (cursorProperty().get() == Cursor.CLOSED_HAND) {
-
-                    int indexTargetRelative = (event.getY() < 0) ? (int) ((event.getY() + (-1) * (Dominoes.GRAPH_HEIGHT + 6)) / (Dominoes.GRAPH_HEIGHT + 6)) : (int) (event.getY() / (Dominoes.GRAPH_HEIGHT + 6));
-
-                    if (/*this.*/pieces == null) {
-                        return;
-                    }
-
-                    int indexSource = getSelectionModel().getSelectedIndex();
-
-                    moveItems(indexSource, indexTargetRelative);
+        group.setOnMouseEntered(event -> cursorProperty().set(Cursor.OPEN_HAND));
+        group.setOnMousePressed(event -> cursorProperty().set(Cursor.CLOSED_HAND));
+        group.setOnMouseReleased(event -> {
+            if (cursorProperty().get() == Cursor.CLOSED_HAND) {
+                int indexTargetRelative = (event.getY() < 0) ? (int) ((event.getY() + (-1) * (Dominoes.GRAPH_HEIGHT + 6)) / (Dominoes.GRAPH_HEIGHT + 6)) : (int) (event.getY() / (Dominoes.GRAPH_HEIGHT + 6));
+                if (pieces == null) {
+                    return;
                 }
-                cursorProperty().set(Cursor.OPEN_HAND);
+                int indexSource = getSelectionModel().getSelectedIndex();
+                moveItems(indexSource, indexTargetRelative);
             }
+            cursorProperty().set(Cursor.OPEN_HAND);
         });
-        group.setOnMouseExited(new EventHandler<MouseEvent>() {
-
-            @Override
-            public void handle(MouseEvent event) {
-                if (cursorProperty().get() == Cursor.CLOSED_HAND) {
-
-                } else {
-                    cursorProperty().set(Cursor.DEFAULT);
-                }
-            }
-        });
-
-        group.setOnMouseClicked(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent mouseEvent) {
-                if (mouseEvent.getButton().equals(MouseButton.PRIMARY)) {
-                    if (mouseEvent.getClickCount() == 2) {
-                        System.out.println("copy to area move");
-                        copyFromListToAreaMove(group);
-                    }
-                }
-            }
-        });
-
-        minimenu.addEventFilter(MouseEvent.MOUSE_RELEASED, new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent event) {
-
-                if (event.getButton() == MouseButton.SECONDARY) {
-                    event.consume();
-                }
-            }
-        });
-        minimenu.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                // choise menu item multiply
-                if (((MenuItem) event.getTarget()).getText().equals(menuItemToAreaMove.getText())) {
+        group.setOnMouseExited(event -> cursorProperty().set(
+            cursorProperty().get() == Cursor.CLOSED_HAND ?
+                Cursor.DEFAULT : cursorProperty().get()));
+        group.setOnMouseClicked(event -> {
+            if (event.getButton().equals(MouseButton.PRIMARY)) {
+                if (event.getClickCount() == 2) {
                     System.out.println("copy to area move");
                     copyFromListToAreaMove(group);
-                } else if (((MenuItem) event.getTarget()).getText().equals(menuItemRemove.getText())) {
-                    System.out.println("removing");
-                    try {
-                        removeFromListAndArea(group);
-                    } catch (IOException ex) {
-                        System.err.println(ex.getMessage());
-                    }
                 }
             }
         });
-        group.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent e) {
-                if (e.getButton() == MouseButton.SECONDARY) {
-                    minimenu.show(group, e.getScreenX(), e.getScreenY());
-                } else {
-                    minimenu.hide();
+	}
+
+    private void addMenuHandlers(Group group) {
+        ContextMenu minimenu = new ContextMenu();
+        MenuItem menuItemToAreaMove = new MenuItem("Copy To Area Move");
+        MenuItem menuItemRemove = new MenuItem("Remove");
+        minimenu.addEventFilter(MouseEvent.MOUSE_RELEASED, event -> {
+            if (event.getButton() == MouseButton.SECONDARY) {
+                event.consume();
+            }
+        });
+        minimenu.setOnAction(event -> {
+            // choose menu item multiply
+            if (((MenuItem) event.getTarget()).getText().equals(menuItemToAreaMove.getText())) {
+                System.out.println("copy to area move");
+                copyFromListToAreaMove(group);
+            } else if (((MenuItem) event.getTarget()).getText().equals(menuItemRemove.getText())) {
+                System.out.println("removing");
+                try {
+                    removeFromListAndArea(group);
+                } catch (IOException ex) {
+                    System.err.println(ex.getMessage());
+                    ex.printStackTrace();
                 }
+            }
+        });
+        group.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+            if (event.getButton() == MouseButton.SECONDARY) {
+                minimenu.show(group, event.getScreenX(), event.getScreenY());
+            } else {
+                minimenu.hide();
             }
         });
 
         minimenu.getItems().addAll(menuItemToAreaMove, menuItemRemove);
+	}
 
-        this.dominoes.add(domino);
-
-        this.pieces.add(group);
-
-        result = true;
-        return result;
-    }
-
-    /**
+	/**
      * This function checks if a domino parameters is added in the list
      *
      * @param domino The domino to check
