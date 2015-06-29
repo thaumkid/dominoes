@@ -237,6 +237,7 @@ public class AreaMove extends Pane {
                     multiply();
                 } catch (IOException ex) {
                     System.err.println(ex.getMessage());
+                    ex.printStackTrace();
                 }
             }
         });
@@ -259,6 +260,7 @@ public class AreaMove extends Pane {
                         	}
                         } catch (IOException ex) {
                             System.err.println(ex.getMessage());
+                            ex.printStackTrace();
                         }
                     }
                 }
@@ -311,12 +313,14 @@ public class AreaMove extends Pane {
                     	}
                     } catch (IOException ex) {
                         System.err.println(ex.getMessage());
+                        ex.printStackTrace();
                     }
                 } else if (((MenuItem) event.getTarget()).getText().equals(menuItemAggregateRow.get(index).getText())) {
                     try {
                         reduceColumns(group);
                     } catch (IOException ex) {
                         System.err.println(ex.getMessage());
+                        ex.printStackTrace();
                     }
 
                 } else if (((MenuItem) event.getTarget()).getText().equals(menuItemAggregateCol.get(index).getText())) {
@@ -324,6 +328,7 @@ public class AreaMove extends Pane {
                         reduceLines(group);
                     } catch (IOException ex) {
                         System.err.println(ex.getMessage());
+                        ex.printStackTrace();
                     }
 
                 } else if (((MenuItem) event.getTarget()).getText().equals(menuItemConfidence.getText())) {
@@ -742,7 +747,7 @@ public class AreaMove extends Pane {
         Color colorHistoric = (Color)((Text)piece.getChildren().get(Dominoes.GRAPH_HISTORIC)).getFill();
         FillTransition ftHistoric1 = new FillTransition(Duration.millis(duration));
         ftHistoric1.setFromValue(colorHistoric);
-        ftHistoric1.setToValue(Dominoes.COLOR_INIVISIBLE);
+        ftHistoric1.setToValue(Dominoes.COLOR_INVISIBLE);
         
         FillTransition ftHistoric2 = new FillTransition(Duration.millis(duration));
         ftHistoric2.setFromValue(ftHistoric1.getToValue());
@@ -752,12 +757,12 @@ public class AreaMove extends Pane {
         Color colorType = (Color) ((Shape) groupType.getChildren().get(0)).getFill();
         FillTransition ftType1 = new FillTransition(Duration.millis(duration));
         ftType1.setFromValue(colorType);
-        ftType1.setToValue(Dominoes.COLOR_INIVISIBLE);
+        ftType1.setToValue(Dominoes.COLOR_INVISIBLE);
         
         Color colorFontType = (Color) ((Text)groupType.getChildren().get(1)).getFill();
         FillTransition ftType2 = new FillTransition(Duration.millis(duration));
         ftType2.setFromValue(colorFontType);
-        ftType2.setToValue(Dominoes.COLOR_INIVISIBLE);
+        ftType2.setToValue(Dominoes.COLOR_INVISIBLE);
         
         FillTransition ftType3 = new FillTransition(Duration.millis(duration));
         ftType3.setFromValue(ftType1.getToValue());
@@ -779,8 +784,8 @@ public class AreaMove extends Pane {
         ParallelTransition transition2_2 = new ParallelTransition(piece.getChildren().get(Dominoes.GRAPH_ID_ROW), rtPieceRow);
         ParallelTransition transition2_3 = new ParallelTransition(piece.getChildren().get(Dominoes.GRAPH_ID_COL), rtPieceCol);
         
-        if(!colorFontType.equals(Dominoes.COLOR_INIVISIBLE)
-        		|| !colorHistoric.equals(Dominoes.COLOR_INIVISIBLE)){
+        if(!colorFontType.equals(Dominoes.COLOR_INVISIBLE)
+        		|| !colorHistoric.equals(Dominoes.COLOR_INVISIBLE)){
         	transition2_1.setDelay(Duration.millis(duration));
         	transition2_2.setDelay(Duration.millis(duration));
         	transition2_3.setDelay(Duration.millis(duration));
@@ -794,8 +799,8 @@ public class AreaMove extends Pane {
         ParallelTransition transition3_2 = new ParallelTransition(groupType.getChildren().get(0), ftType3);
         ParallelTransition transition3_3 = new ParallelTransition(groupType.getChildren().get(1), ftType4);
         
-        if(!colorFontType.equals(Dominoes.COLOR_INIVISIBLE)
-        		|| !colorHistoric.equals(Dominoes.COLOR_INIVISIBLE)){
+        if(!colorFontType.equals(Dominoes.COLOR_INVISIBLE)
+        		|| !colorHistoric.equals(Dominoes.COLOR_INVISIBLE)){
         	transition3_1.setDelay(Duration.millis(2 * duration));
         	transition3_2.setDelay(Duration.millis(2 * duration));
         	transition3_3.setDelay(Duration.millis(2 * duration));

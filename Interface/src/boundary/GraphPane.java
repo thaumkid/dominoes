@@ -6,6 +6,7 @@
 package boundary;
 
 import domain.Dominoes;
+import domain.Dominoes.DominoType;
 import edu.uci.ics.jung.algorithms.filters.EdgePredicateFilter;
 import edu.uci.ics.jung.algorithms.filters.VertexPredicateFilter;
 import edu.uci.ics.jung.algorithms.layout.CircleLayout;
@@ -53,35 +54,24 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import javax.swing.JSlider;
-import javax.xml.ws.Action;
-
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.embed.swing.SwingNode;
-import javafx.event.ActionEvent;
-import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleGroup;
-import javafx.scene.control.Tooltip;
-import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.Pane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 
-import org.apache.commons.collections15.Factory;
 import org.apache.commons.collections15.Predicate;
 import org.apache.commons.collections15.Transformer;
-import org.apache.commons.collections15.functors.ConstantTransformer;
 
 import arch.Cell;
 import arch.MatrixDescriptor;
@@ -132,7 +122,7 @@ public class GraphPane extends BorderPane {
         // create a simple graph for the demo
         graph = new DelegateForest<String, String>();
     	
-    	if (domino.getType() == Dominoes.TYPE_SUPPORT)
+    	if (domino.getType() == DominoType.SUPPORT)
     		graph = new UndirectedSparseGraph<String, String>();
     	else
     		graph = new DirectedSparseGraph<String, String>();
@@ -412,7 +402,7 @@ public class GraphPane extends BorderPane {
     	
     	List<Cell> _cells = new ArrayList<>();
     	
-    	if (domino.getType() == Dominoes.TYPE_SUPPORT){
+    	if (domino.getType() == DominoType.SUPPORT){
     		for (Cell cell : nz){
     			
     			boolean toAdd = true;
@@ -475,7 +465,7 @@ public class GraphPane extends BorderPane {
 			else {
 				
 				n2 = new NodeInfo(id2);
-				if (domino.getType() == Dominoes.TYPE_SUPPORT) 
+				if (domino.getType() == DominoType.SUPPORT) 
 					n2.setColor(Color.BLUE);
 				else
 					n2.setColor(Color.GREEN);
@@ -492,7 +482,7 @@ public class GraphPane extends BorderPane {
 			edge.setColor(new Color(1.0f - intensityColor, 1.0f - intensityColor, 1.0f - intensityColor));
 			
 			edges.put(edge.getId(), edge);
-			if (domino.getType() == Dominoes.TYPE_SUPPORT) 
+			if (domino.getType() == DominoType.SUPPORT) 
 				graph.addEdge(edge.getId(), n1.toString(), n2.toString(), EdgeType.UNDIRECTED);
 			else
 				graph.addEdge(edge.getId(), n1.toString(), n2.toString(), EdgeType.DIRECTED);

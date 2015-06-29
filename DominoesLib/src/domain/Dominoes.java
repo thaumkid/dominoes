@@ -10,52 +10,52 @@ import javafx.scene.text.Text;
 import arch.IMatrix2D;
 import arch.Matrix2D;
 
-@SuppressWarnings("restriction")
+//@SuppressWarnings("restriction")
 public final class Dominoes {
     public final static double GRAPH_WIDTH = 100;
     public final static double GRAPH_HEIGHT = 50;
 
-    public static Color COLOR_BACK = new Color(1, 1, 1, 1);
-    public static Color COLOR_BORDER = new Color(0.56, 0.56, 0.56, 1);
-    public static Color COLOR_LINE = new Color(0.56, 0.76, 0.56, 1);
-    public static Color COLOR_BORDER_DERIVED = new Color(0.36, 0.36, 0.36, 1);
-    public static Color COLOR_NORMAL_FONT = new Color(0, 0, 0, 1);
-    public static Color COLOR_NO_OPERATION_FONT = new Color(1, 0, 0, 1);
-    public static Color COLOR_OPERATE_FONT = new Color(0, 1, 0, 1);
-    public static Color COLOR_HISTORIC = new Color(0.86, 0.86, 0.86, 1);
-    public static Color COLOR_INIVISIBLE = new Color(0, 0, 0, 0);
-    public static Color COLOR_TYPE = COLOR_BORDER;
+    public final static Color COLOR_BACK              = new Color(1, 1, 1, 1);
+    public final static Color COLOR_BORDER            = new Color(0.56, 0.56, 0.56, 1);
+    public final static Color COLOR_LINE              = new Color(0.56, 0.76, 0.56, 1);
+    public final static Color COLOR_BORDER_DERIVED    = new Color(0.36, 0.36, 0.36, 1);
+    public final static Color COLOR_NORMAL_FONT       = new Color(0, 0, 0, 1);
+    public final static Color COLOR_NO_OPERATION_FONT = new Color(1, 0, 0, 1);
+    public final static Color COLOR_OPERATE_FONT      = new Color(0, 1, 0, 1);
+    public final static Color COLOR_HISTORIC          = new Color(0.86, 0.86, 0.86, 1);
+    public final static Color COLOR_INVISIBLE        = new Color(0, 0, 0, 0);
+    public final static Color COLOR_TYPE              = COLOR_BORDER;
     
-    public static String DEVICE_GPU = "GPU";
-    public static String DEVICE_CPU = "CPU";
+    public final static String DEVICE_GPU = "GPU";
+    public final static String DEVICE_CPU = "CPU";
 
     /*
      This variables are used to know the sequence of the matrix information 
      in the hour of to save/load in the .TXT format
      */
-    public final static int INDEX_TYPE = 0;
+    public final static int INDEX_TYPE   = 0;
     public final static int INDEX_ID_ROW = 1;
     public final static int INDEX_ID_COL = 2;
     public final static int INDEX_HEIGHT = 3;
-    public final static int INDEX_WIDTH = 4;
-    public final static int INDEX_HIST = 5;
+    public final static int INDEX_WIDTH  = 4;
+    public final static int INDEX_HIST   = 5;
     public final static int INDEX_MATRIX = 6;
 
-    public final static int INDEX_SIZE = 7;
+    public final static int INDEX_SIZE   = 7;
 
     /*
      This variables are used to know the sequence of the elements,
-     the Group (Graphicaly) relative to this Domino, in time of the insert
+     the Group (Graphically) relative to this Domino, in time of the insert
      */
-    public final static int GRAPH_BORDER = 0;
-    public final static int GRAPH_FILL = 1;
-    public final static int GRAPH_LINE = 2;
-    public final static int GRAPH_HISTORIC = 3;
-    public final static int GRAPH_TYPE = 4;
+    public final static int GRAPH_BORDER           = 0;
+    public final static int GRAPH_FILL             = 1;
+    public final static int GRAPH_LINE             = 2;
+    public final static int GRAPH_HISTORIC         = 3;
+    public final static int GRAPH_TYPE             = 4;
     public final static int GRAPH_TRANSPOSE_ID_ROW = 6;
     public final static int GRAPH_TRANSPOSE_ID_COL = 5;
-    public final static int GRAPH_ID_ROW = 5;
-    public final static int GRAPH_ID_COL = 6;
+    public final static int GRAPH_ID_ROW           = 5;
+    public final static int GRAPH_ID_COL           = 6;
     public final static int GRAPH_NORMAL_FONT_SIZE = 15;
     public final static int GRAPH_AGGREG_FONT_SIZE = 12;
     
@@ -66,16 +66,16 @@ public final class Dominoes {
     /*
      This variables are used to know the type of matrix
      */
-    public final static int TYPE_BASIC = 0;
-    public final static int TYPE_DERIVED = 1;
-    public final static int TYPE_SUPPORT = 2;
-    public final static int TYPE_CONFIDENCE = 3;
-    public final static int TYPE_LIFT = 4;
-    public final static String TYPE_BASIC_CODE = "B";
-    public final static String TYPE_DERIVED_CODE = "D";
-    public final static String TYPE_SUPPORT_CODE = "S";
-    public final static String TYPE_CONFIDENCE_CODE = "C";
-    public final static String TYPE_LIFT_CODE = "L";
+    public static enum DominoType{
+    	BASIC("B"),DERIVED("D"),SUPPORT("S"),CONFIDENCE("C"),LIFT("L");
+    	
+    	private final String code;
+    	private DominoType(String code) {
+    		this.code = code;
+    	};
+    			
+    	public String getCode() { return code; }
+    }
     
     public final static String AGGREG_TEXT = "/SUM ";
 
@@ -84,7 +84,7 @@ public final class Dominoes {
     private String idRow;
     private String idCol;
     private Historic historic;
-    private int type;
+    private DominoType type;
     private IMatrix2D mat = null;
     private String currentDevice = DEVICE_CPU;
 
@@ -97,8 +97,8 @@ public final class Dominoes {
     /**
      * Class build. The type, for default, is Basic.
      *
-     * @param idRow - identifier row of the Dominos matrix
-     * @param idCol - identifier row of the Dominos matrix
+     * @param idRow - identifier row of the Dominoes matrix
+     * @param idCol - identifier row of the Dominoes matrix
      * @param mat - matrix2D
      * @throws IllegalArgumentException - in case of invalid parameters
      */
@@ -112,7 +112,7 @@ public final class Dominoes {
 
         this.setHistoric(new Historic(idRow, idCol));
 
-        this.type = Dominoes.TYPE_BASIC;
+        this.type = DominoType.BASIC;
         this.currentDevice = _device;
     }
 
@@ -120,13 +120,13 @@ public final class Dominoes {
      * Class build. The type, for default, is Derived
      *
      * @param type
-     * @param idRow - identifier row of the Dominos matrix
-     * @param idCol - identifier row of the Dominos matrix
+     * @param idRow - identifier row of the Dominoes matrix
+     * @param idCol - identifier row of the Dominoes matrix
      * @param historic - The dominoes historic derivated
      * @param mat - matrix2D
      * @throws IllegalArgumentException - in case of invalid parameters
      */
-    public Dominoes(int type, String idRow, String idCol, Historic historic, Matrix2D mat, String _device) throws IllegalArgumentException {
+    public Dominoes(DominoType type, String idRow, String idCol, Historic historic, Matrix2D mat, String _device) throws IllegalArgumentException {
     	this.rowIsAggragatable = false;
     	this.colIsAggragatable = false;
         this.setIdRow(idRow);
@@ -135,12 +135,8 @@ public final class Dominoes {
         this.setMat(mat);
 
         this.setHistoric(historic);
-        if (type == Dominoes.TYPE_BASIC
-                || (type != Dominoes.TYPE_DERIVED
-                && type != Dominoes.TYPE_CONFIDENCE
-                && type != Dominoes.TYPE_SUPPORT
-                && type != Dominoes.TYPE_LIFT)) {
-            throw new IllegalArgumentException("Invalid argument.\nThe Type attribute not is defined or not is valid");
+        if (type == DominoType.BASIC) {
+            throw new IllegalArgumentException("Invalid argument.\nThe Type attribute is not defined or is not valid");
         }
         this.type = type;
         this.currentDevice = _device;
@@ -264,21 +260,20 @@ public final class Dominoes {
         type.setX(circle.getCenterX() - circle.getRadius()/2 - padding);
         type.setY(circle.getCenterY() + circle.getRadius()/2 + padding);
         
+        type.setText(this.getType().getCode());
         switch (this.getType()) {
-            case Dominoes.TYPE_BASIC:
-                type.setText(Dominoes.TYPE_BASIC_CODE);
-                type.setFill(Dominoes.COLOR_INIVISIBLE);
+            case BASIC:
+                type.setFill(Dominoes.COLOR_INVISIBLE);
                 
-                circle.setFill(Dominoes.COLOR_INIVISIBLE);
+                circle.setFill(Dominoes.COLOR_INVISIBLE);
             	
-            	historic.setFill(Dominoes.COLOR_INIVISIBLE);
+            	historic.setFill(Dominoes.COLOR_INVISIBLE);
             	
                 break;
-            case Dominoes.TYPE_DERIVED:
-                type.setText(Dominoes.TYPE_DERIVED_CODE);
-                type.setFill(Dominoes.COLOR_INIVISIBLE);
+            case DERIVED:
+                type.setFill(Dominoes.COLOR_INVISIBLE);
                 
-                circle.setFill(Dominoes.COLOR_INIVISIBLE);
+                circle.setFill(Dominoes.COLOR_INVISIBLE);
                 
                 border.setFill(Dominoes.COLOR_BORDER_DERIVED);
                 back.setWidth(back.getWidth() - 2);
@@ -289,15 +284,9 @@ public final class Dominoes {
                 line.setFill(Dominoes.COLOR_LINE);
                 
                 break;
-            case Dominoes.TYPE_SUPPORT:
-                type.setText(Dominoes.TYPE_SUPPORT_CODE);
-                
-                break;
-            case Dominoes.TYPE_CONFIDENCE:
-                type.setText(Dominoes.TYPE_CONFIDENCE_CODE);
-                break;
-            case Dominoes.TYPE_LIFT:
-                type.setText(Dominoes.TYPE_LIFT_CODE);
+            case SUPPORT:
+            case CONFIDENCE:
+            case LIFT:
                 break;
         }
         
@@ -356,7 +345,7 @@ public final class Dominoes {
      *
      * @return Return the Type value
      */
-    public int getType() {
+    public DominoType getType() {
         return type;
     }
 
@@ -434,11 +423,11 @@ public final class Dominoes {
      */
     public void transpose() {
         
-        if(!(this.type == Dominoes.TYPE_BASIC)){
-        	this.type = Dominoes.TYPE_DERIVED;
+        if(!(this.type == DominoType.BASIC)){
+        	this.type = DominoType.DERIVED;
         }
         if (this.getIdRow().equals(this.getIdCol())) {
-            this.type = Dominoes.TYPE_SUPPORT;
+            this.type = DominoType.SUPPORT;
         }
 
         this.getHistoric().reverse();
@@ -476,11 +465,11 @@ public final class Dominoes {
     	
     	rowIsAggragatable = true;
     	
-        if(!(this.type == Dominoes.TYPE_BASIC)){
-        	this.type = Dominoes.TYPE_DERIVED;
+        if(!(this.type == DominoType.BASIC)){
+        	this.type = DominoType.DERIVED;
         }
         if (this.getIdRow().equals(this.getIdCol())) {
-            this.type = Dominoes.TYPE_SUPPORT;
+            this.type = DominoType.SUPPORT;
         }
 
 //        this.getHistoric().reverse();
@@ -501,10 +490,10 @@ public final class Dominoes {
     	
     	Dominoes domResult = new Dominoes(dom.getDevice());
     	
-    	domResult.type = Dominoes.TYPE_DERIVED;
+    	domResult.type = DominoType.DERIVED;
 
         if (idRow.equals(dom.getIdCol())) {
-            domResult.type = Dominoes.TYPE_SUPPORT;
+            domResult.type = DominoType.SUPPORT;
         }
         
         try {
