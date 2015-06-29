@@ -25,6 +25,7 @@ import javafx.stage.Stage;
 
 import javax.swing.JFrame;
 
+import cern.colt.Arrays;
 import control.Controller;
 import dao.DominoesSQLDao;
 import domain.Configuration;
@@ -32,7 +33,7 @@ import domain.Dominoes;
 
 // Information fragment // opened question
 
-@SuppressWarnings("restriction")
+//@SuppressWarnings("restriction")
 public class App extends Application {
 
     private static ListViewDominoes list;
@@ -63,7 +64,7 @@ public class App extends Application {
     private static GUIManager manager;
     private static Date beginDate = null;
     private static Date endDate = null;
-    private static String projectName = "Caminho";
+    private static String projectName = "derby";//"voldemort";
     
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -168,7 +169,6 @@ public class App extends Application {
     public static void checkout(String _beginDate, String _endDate){
     	// Open database
         try {
-			
 			// Set begin and end date
 			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
@@ -226,41 +226,34 @@ public class App extends Application {
 		window.setAlwaysOnTop(true);
 		manager.setMainWindow(window);
         
-        time.setButtomOnAction(new EventHandler<ActionEvent>() {
-			
-			@Override
-			public void handle(ActionEvent arg0) {
+        time.setButtomOnAction(event -> {
 
 				beginDateWork = time.getValueToolTipMin();
 				endDateWork = time.getValueToolTipMax();
 
 				App.load(beginDateWork, endDateWork);
-			}
-        });
-    	
+		});
     }
     
-    public static void load(String being, String end){
-    	manager.run(new Runnable(){
-			public void run(){
-				Platform.runLater(new Runnable(){
-					public void run(){
-						try {
-							App.menu.load(beginDateWork, endDateWork);
-						} catch (ParseException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-					}
-				});
-			}
-		});
+    public static void load(String begin, String end){
+	    manager.run(() -> Platform.runLater(() -> {
+	        try {
+                System.out.println("Running with beginDateWork="
+                                   + beginDateWork + " endDateWork=" + endDateWork
+                                   + " begin=" + begin + " end=" + end);
+                App.menu.load(beginDateWork, endDateWork);
+            } catch (ParseException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+		}));
     }
     
     /**
      * Set the basic configuration of this Application
      */
     public static void set() {
+    	System.out.println("Calling set..." + Configuration.automaticCheck);
         if(Configuration.automaticCheck
 //        		&& beginDateWork.compareTo(endDateWork) < 0
         		){
@@ -358,7 +351,7 @@ public class App extends Application {
     }
 
     /**
-     * This function adds in List a matrix specified
+     * This function adds in List a specified matrix
      *
      * @param dominoes the matrix to be added
      */
@@ -367,7 +360,7 @@ public class App extends Application {
     }
 
     /**
-     * This function adds in Area a matrix specified
+     * This function adds in Area a specified matrix
      *
      * @param dominoes the matrix to be added
      */
@@ -435,6 +428,7 @@ public class App extends Application {
     *
     */
    public static void start() {
+	   System.out.println("Args: " + Arrays.toString(Controller.args));
        launch(Controller.args );
    }
    
