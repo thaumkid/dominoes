@@ -31,8 +31,9 @@ public class ListViewDominoes extends ListView<DominoView> {
     private ArrayList<Dominoes> dominoes;
 
     private double padding = 20;
-
     private boolean visibilityHistoric;
+    
+    private ContextMenu itemsMenu;
 
     /**
      * This class builder initialize this list and your arrays with values
@@ -84,25 +85,27 @@ public class ListViewDominoes extends ListView<DominoView> {
             event.consume();
         });
         
-//        setOnDragOver(event -> {
-//            if (event.getDragboard().hasContent(Dominoes.clipboardFormat)) {
-//                event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
-//            }
-//            for (DominoView view : pieces) {
-//                System.out.println(view.getBoundsInParent()// + " and " + view.getBoundsInLocal()
-//                  + " and " + event.getX() + "," + event.getY()
-////                  + " and " + event.getSceneX() + "," + event.getSceneY()
-//                  );
-//                if (view.getBoundsInParent().contains(event.getX(),event.getY())) {
-//                    int index = pieces.indexOf(view);
-//                    if (index >= 0) {
-//                        ListViewDominoes.this.getSelectionModel().clearAndSelect(index);
-//                        break;
-//                    }
-//                }
-//            }
-//            event.consume();
-//        });
+        itemsMenu = new ContextMenu();
+        MenuItem menuItemToAreaMove = new MenuItem("Copy To Area Move");
+        menuItemToAreaMove.setOnAction(event -> {
+            System.out.println("copy to area move");
+            DominoView selectedItem = ListViewDominoes.this.getSelectionModel().getSelectedItem();
+            if (selectedItem != null)
+                copyFromListToAreaMove(selectedItem);
+        });
+        
+        MenuItem menuItemRemove = new MenuItem("Remove");
+        menuItemRemove.setOnAction(event -> {
+            System.out.println("removing");
+            DominoView selectedItem = ListViewDominoes.this.getSelectionModel().getSelectedItem();
+            try {
+                removeFromListAndArea(selectedItem);
+            } catch (IOException ex) {
+                System.err.println(ex.getMessage());
+                ex.printStackTrace();
+            }
+        });
+        itemsMenu.getItems().addAll(menuItemToAreaMove, menuItemRemove);
     }
 
     /**
@@ -130,9 +133,8 @@ public class ListViewDominoes extends ListView<DominoView> {
         group.setVisible(DominoView.Views.GRAPH_HISTORIC, true);
 
         addMouseHandlers(domino, group);
-        // TODO do we really need handlers for every item in the list? Can't we
-        // push this up a level?
-        addMenuHandlers(group);
+        group.setOnContextMenuRequested(event ->
+            itemsMenu.show(group, event.getScreenX(), event.getScreenY()));
 
         this.dominoes.add(domino);
 
@@ -157,7 +159,7 @@ public class ListViewDominoes extends ListView<DominoView> {
                 }
             }
         });
-
+        
         group.setOnDragDetected(event -> {
             Dragboard dragboard = startDragAndDrop(TransferMode.MOVE);
             ClipboardContent content = new ClipboardContent();
@@ -179,42 +181,6 @@ public class ListViewDominoes extends ListView<DominoView> {
             }
             event.consume();
         });
-    }
-
-    private void addMenuHandlers(Group group) {
-        ContextMenu minimenu = new ContextMenu();
-        MenuItem menuItemToAreaMove = new MenuItem("Copy To Area Move");
-        MenuItem menuItemRemove = new MenuItem("Remove");
-        minimenu.addEventFilter(MouseEvent.MOUSE_RELEASED, event -> {
-            if (event.getButton() == MouseButton.SECONDARY) {
-                event.consume();
-            }
-        });
-        minimenu.setOnAction(event -> {
-            // choose menu item multiply
-            String text = ((MenuItem) event.getTarget()).getText();
-            if (text.equals(menuItemToAreaMove.getText())) {
-                System.out.println("copy to area move");
-                copyFromListToAreaMove(group);
-            } else if (text.equals(menuItemRemove.getText())) {
-                System.out.println("removing");
-                try {
-                    removeFromListAndArea(group);
-                } catch (IOException ex) {
-                    System.err.println(ex.getMessage());
-                    ex.printStackTrace();
-                }
-            }
-        });
-        group.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
-            if (event.getButton() == MouseButton.SECONDARY) {
-                minimenu.show(group, event.getScreenX(), event.getScreenY());
-            } else {
-                minimenu.hide();
-            }
-        });
-
-        minimenu.getItems().addAll(menuItemToAreaMove, menuItemRemove);
     }
     
     /**
@@ -260,7 +226,6 @@ public class ListViewDominoes extends ListView<DominoView> {
      */
     public void moveItems(int indexSource, int indexTargetRelative) {
         int indexTarget = indexSource + indexTargetRelative;
-        // int indexTarget = indexTargetRelative;
 
         // catch index selected
         if (this.pieces == null || this.dominoes == null) {

@@ -13,6 +13,7 @@ import javafx.scene.Group;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
@@ -61,7 +62,7 @@ public class AreaMove extends Pane {
         this.dominoes = new ArrayList<>();
         this.pieces = new ArrayList<>();
         
-        background.setOnDragDropped(event -> {
+        setOnDragDropped(event -> {
             boolean success = false;
             Dragboard db = event.getDragboard();
             if (db.hasContent(Dominoes.clipboardFormat)) {
@@ -78,20 +79,9 @@ public class AreaMove extends Pane {
             event.setDropCompleted(success);
             event.consume();
         });
-
-//        background.setOnDragDetected(event -> {
-//            Dragboard dragboard = startDragAndDrop(TransferMode.MOVE);
-//            ClipboardContent content = new ClipboardContent();
-//            content.put(Dominoes.clipboardFormat, domino);
-//            dragboard.setDragView(group.snapshot(null, null));
-//            dragboard.setDragViewOffsetX(event.getX());
-//            dragboard.setDragViewOffsetY(event.getY());
-//            dragboard.setContent(content);
-//            event.consume();
-//        });
-
-        background.setOnDragOver(event -> {
-            if (event.getGestureSource() != background && event.getDragboard().hasContent(Dominoes.clipboardFormat)) {
+        
+        setOnDragOver(event -> {
+            if (event.getDragboard().hasContent(Dominoes.clipboardFormat)) {
                 event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
             }
             event.consume();
@@ -155,10 +145,17 @@ public class AreaMove extends Pane {
         this.pieces.add(group);
         this.dominoes.add(domino);
         this.getChildren().add(group);
-
-        //if (!domino.getIdRow().equals(domino.getIdCol())) {
-          //  menuItemViewGraph.setDisable(true);
-        //}
+        
+//        group.setOnDragDetected(event -> {
+//            Dragboard dragboard = startDragAndDrop(TransferMode.MOVE);
+//            ClipboardContent content = new ClipboardContent();
+//            content.put(Dominoes.clipboardFormat, domino);
+//            dragboard.setDragView(group.snapshot(null, null));
+//            dragboard.setDragViewOffsetX(event.getX());
+//            dragboard.setDragViewOffsetY(event.getY());
+//            dragboard.setContent(content);
+//            event.consume();
+//        });
 
         group.setOnMouseEntered(event -> cursorProperty().set(Cursor.OPEN_HAND));
         group.setOnMouseDragged(event -> {
@@ -168,33 +165,20 @@ public class AreaMove extends Pane {
             double newTranslateY = srcTranslateY + offsetY;
 
             // detect move out
-            boolean detecMoveOutX = false;
-            boolean detecMoveOutY = false;
             if (newTranslateX < background.getX()) {
-                ((Group) (event.getSource())).setTranslateX(background.getX());
-
-                detecMoveOutX = true;
+                newTranslateX = background.getX();
+            } else if (newTranslateX + ((Group) (event.getSource())).prefWidth(-1) > background.getX() + background.getWidth()) {
+                newTranslateX = background.getX() + background.getWidth() - ((Group) (event.getSource())).prefWidth(-1);
             }
             if (newTranslateY < background.getY()) {
-                ((Group) (event.getSource())).setTranslateY(background.getY());
-                detecMoveOutY = true;
+                newTranslateY = background.getY();
+            } else if (newTranslateY + ((Group) (event.getSource())).prefHeight(-1) > background.getY() + background.getHeight()) {
+                newTranslateY = background.getY() + background.getHeight() - ((Group) (event.getSource())).prefHeight(-1);
             }
-            if (newTranslateX + ((Group) (event.getSource())).prefWidth(-1) > background.getX() + background.getWidth()) {
-                ((Group) (event.getSource())).setTranslateX(background.getX() + background.getWidth() - ((Group) (event.getSource())).prefWidth(-1));
-                detecMoveOutX = true;
-            }
-            if (newTranslateY + ((Group) (event.getSource())).prefHeight(-1) > background.getY() + background.getHeight()) {
-                ((Group) (event.getSource())).setTranslateY(background.getY() + background.getHeight() - ((Group) (event.getSource())).prefHeight(-1));
-                detecMoveOutY = true;
-            }
-
-            if (!detecMoveOutX) {
-                ((Group) (event.getSource())).setTranslateX(newTranslateX);
-            }
-            if (!detecMoveOutY) {
-                ((Group) (event.getSource())).setTranslateY(newTranslateY);
-            }
-
+            
+            ((Group) (event.getSource())).setTranslateX(newTranslateX);
+            ((Group) (event.getSource())).setTranslateY(newTranslateY);
+            
             // detect multiplication
             int index = pieces.indexOf(group);
 
@@ -411,28 +395,21 @@ public class AreaMove extends Pane {
      * This will make a multiplication
      */
     private void multiply() throws IOException {
-
         if (this.indexFirstOperatorMultiplication != -1 && this.indexSecondOperatorMultiplication != -1) {
-
             Dominoes d1 = this.dominoes.get(this.indexFirstOperatorMultiplication);
             Dominoes d2 = this.dominoes.get(this.indexSecondOperatorMultiplication);
 
             if (d1.getIdCol().equals(d2.getIdRow())) {
-
+                DominoView v1 = this.pieces.get(this.indexFirstOperatorMultiplication);
+                DominoView v2 = this.pieces.get(this.indexSecondOperatorMultiplication);
+                
                 Dominoes resultOperation = control.Controller.MultiplyMatrices(d1, d2);
 
-                double x = (this.pieces.get(this.dominoes.indexOf(d1)).getTranslateX()
-                        + this.pieces.get(this.dominoes.indexOf(d2)).getTranslateX()) / 2;
-
-                double y = (this.pieces.get(this.dominoes.indexOf(d1)).getTranslateY()
-                        + this.pieces.get(this.dominoes.indexOf(d2)).getTranslateY()) / 2;
-
-                if (this.remove(this.indexFirstOperatorMultiplication)
-                        && this.indexSecondOperatorMultiplication > this.indexFirstOperatorMultiplication) {
-                    this.remove(this.indexSecondOperatorMultiplication - 1);
-                } else {
-                    this.remove(this.indexSecondOperatorMultiplication);
-                }
+                double x = (v1.getTranslateX() + v2.getTranslateX()) / 2;
+                double y = (v1.getTranslateY() + v2.getTranslateY()) / 2;
+                
+                this.remove(v1);
+                this.remove(v2);
                 
                 this.add(resultOperation, x, y);
                 if (Configuration.autoSave) {
@@ -542,7 +519,6 @@ public class AreaMove extends Pane {
      */
     void setVisibleType() {
     	pieces.forEach(dominoView -> dominoView.setVisible(DominoView.Views.GRAPH_TYPE,Configuration.visibilityType));
-        
     }
 
     /**
@@ -612,7 +588,7 @@ public class AreaMove extends Pane {
         	}
         	
         	this.menuItemAggregateCol.get(index).setDisable(true);
-    	}else{
+    	} else {
     		System.err.println("this domino is already aggregate by " + toReduce.getMat().getMatrixDescriptor().getColType());
     	}
 
