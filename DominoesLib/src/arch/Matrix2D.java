@@ -282,5 +282,13 @@ public class Matrix2D implements IMatrix2D {
 		}
 		
 		return confidence;
-	}		
+	}
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null || !(obj instanceof Matrix2D))
+            return false;
+        Matrix2D o = (Matrix2D) obj;
+        return matrixDescriptor.equals(o.matrixDescriptor);
+    }
 }

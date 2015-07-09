@@ -16,6 +16,8 @@ public class Analyzer {
 	}
 	
 	public static class InvalidMatrix extends Exception {
+		private static final long serialVersionUID = 1L;
+
 		public InvalidMatrix(String message){
 			super(message);
 		}

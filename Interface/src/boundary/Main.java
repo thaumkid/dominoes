@@ -7,7 +7,6 @@
 package boundary;
 
 import control.Controller;
-import domain.Configuration;
 import arch.Session;
 
 /**
@@ -30,6 +29,7 @@ public class Main {
             Session.closeSection();
         } catch (Exception ex) {
             System.err.println(ex.getMessage());
+            throw new RuntimeException(ex);
         }
     }
 }

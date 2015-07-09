@@ -1,11 +1,13 @@
 package arch;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MatrixDescriptor {
-	
-	enum Equality{
+public class MatrixDescriptor implements Serializable {
+    private static final long serialVersionUID = 1L;
+    
+    enum Equality{
 		ROW,
 		COL
 	}
@@ -33,7 +35,6 @@ public class MatrixDescriptor {
 			return false;
 		
 		for (int i = 0; i < thisDesc.size(); i++ ){
-			
 			if (!thisDesc.get(i).equals(otherDesc.get(i)))
 				return false;
 		}
@@ -87,5 +88,14 @@ public class MatrixDescriptor {
 	
 	public boolean hasCol(String col){
 		return columnsDesc.contains(col);
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+        if (obj == null || !(obj instanceof MatrixDescriptor))
+            return false;
+        MatrixDescriptor o = (MatrixDescriptor) obj;
+        return CheckEquality(Equality.ROW,Equality.ROW,o)
+            && CheckEquality(Equality.COL,Equality.COL,o); // TODO do we need this part?
 	}
 }

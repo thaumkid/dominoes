@@ -5,7 +5,6 @@ public class Cell {
 	public int col;
 	public float value;
 	
-	
 	public Cell(){
 		
 	}

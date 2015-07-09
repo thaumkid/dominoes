@@ -1,82 +1,52 @@
 package domain;
 
-import javafx.scene.control.Tooltip;
-import javafx.scene.Group;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
+import javafx.scene.input.DataFormat;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.text.Font;
-import javafx.scene.text.Text;
+
+import java.io.Serializable;
+
 import arch.IMatrix2D;
 import arch.Matrix2D;
 
 //@SuppressWarnings("restriction")
-public final class Dominoes {
-    public final static double GRAPH_WIDTH = 100;
-    public final static double GRAPH_HEIGHT = 50;
+public final class Dominoes implements Serializable {
+    private static final long serialVersionUID = 1L;
+    public final static DataFormat clipboardFormat = new DataFormat("Domino");
 
-    public final static Color COLOR_BACK              = new Color(1, 1, 1, 1);
-    public final static Color COLOR_BORDER            = new Color(0.56, 0.56, 0.56, 1);
-    public final static Color COLOR_LINE              = new Color(0.56, 0.76, 0.56, 1);
-    public final static Color COLOR_BORDER_DERIVED    = new Color(0.36, 0.36, 0.36, 1);
-    public final static Color COLOR_NORMAL_FONT       = new Color(0, 0, 0, 1);
-    public final static Color COLOR_NO_OPERATION_FONT = new Color(1, 0, 0, 1);
-    public final static Color COLOR_OPERATE_FONT      = new Color(0, 1, 0, 1);
-    public final static Color COLOR_HISTORIC          = new Color(0.86, 0.86, 0.86, 1);
-    public final static Color COLOR_INVISIBLE        = new Color(0, 0, 0, 0);
-    public final static Color COLOR_TYPE              = COLOR_BORDER;
-    
     public final static String DEVICE_GPU = "GPU";
     public final static String DEVICE_CPU = "CPU";
 
     /*
-     This variables are used to know the sequence of the matrix information 
-     in the hour of to save/load in the .TXT format
+     * This variables are used to know the sequence of the matrix information in
+     * the hour of to save/load in the .TXT format
      */
-    public final static int INDEX_TYPE   = 0;
+    public final static int INDEX_TYPE = 0;
     public final static int INDEX_ID_ROW = 1;
     public final static int INDEX_ID_COL = 2;
     public final static int INDEX_HEIGHT = 3;
-    public final static int INDEX_WIDTH  = 4;
-    public final static int INDEX_HIST   = 5;
+    public final static int INDEX_WIDTH = 4;
+    public final static int INDEX_HIST = 5;
     public final static int INDEX_MATRIX = 6;
 
-    public final static int INDEX_SIZE   = 7;
+    public final static int INDEX_SIZE = 7;
 
     /*
-     This variables are used to know the sequence of the elements,
-     the Group (Graphically) relative to this Domino, in time of the insert
+     * This variables are used to know the type of matrix
      */
-    public final static int GRAPH_BORDER           = 0;
-    public final static int GRAPH_FILL             = 1;
-    public final static int GRAPH_LINE             = 2;
-    public final static int GRAPH_HISTORIC         = 3;
-    public final static int GRAPH_TYPE             = 4;
-    public final static int GRAPH_TRANSPOSE_ID_ROW = 6;
-    public final static int GRAPH_TRANSPOSE_ID_COL = 5;
-    public final static int GRAPH_ID_ROW           = 5;
-    public final static int GRAPH_ID_COL           = 6;
-    public final static int GRAPH_NORMAL_FONT_SIZE = 15;
-    public final static int GRAPH_AGGREG_FONT_SIZE = 12;
-    
-    private final static double GRAPH_ARC = 10;
-    
-    public final static int GRAPH_SIZE = 8;
+    public static enum DominoType {
+        BASIC("B"), DERIVED("D"), SUPPORT("S"), CONFIDENCE("C"), LIFT("L");
 
-    /*
-     This variables are used to know the type of matrix
-     */
-    public static enum DominoType{
-    	BASIC("B"),DERIVED("D"),SUPPORT("S"),CONFIDENCE("C"),LIFT("L");
-    	
-    	private final String code;
-    	private DominoType(String code) {
-    		this.code = code;
-    	};
-    			
-    	public String getCode() { return code; }
+        private final String code;
+
+        private DominoType(String code) {
+            this.code = code;
+        };
+
+        public String getCode() {
+            return code;
+        }
     }
-    
+
     public final static String AGGREG_TEXT = "/SUM ";
 
     private boolean rowIsAggragatable = false;
@@ -89,22 +59,48 @@ public final class Dominoes {
     private String currentDevice = DEVICE_CPU;
 
     public Dominoes(String _device) {
-    	this.rowIsAggragatable = false;
-    	this.colIsAggragatable = false;
-    	currentDevice = _device;
+        currentDevice = _device;
     }
+
+    /**
+     * Class Builder This function is used when the user to do a multiplication,
+     * this will return a new matrix with data according with a real
+     * multiplication. The type, for default, is the type of the first parameter
+     *
+     * @param firstOperator
+     *            The first matrix in this operation
+     * @param secondOperator
+     *            The second matrix in this operation
+     * @param mat
+     * @return A new matrix
+     */
+
+    /*
+     * public Dominoes(Dominoes firstOperator, Dominoes secondOperator, byte[][]
+     * mat) throws IllegalArgumentException { this.historic = new ArrayList<>();
+     * 
+     * this.historic.addAll(firstOperator.getHistoric());
+     * this.historic.addAll(this.historic.size(), secondOperator.getHistoric());
+     * 
+     * this.setIdRow(firstOperator.getIdRow());
+     * this.setIdCol(secondOperator.getIdCol());
+     * 
+     * this.setMat(mat); this.type = firstOperator.getType(); }
+     */
 
     /**
      * Class build. The type, for default, is Basic.
      *
-     * @param idRow - identifier row of the Dominoes matrix
-     * @param idCol - identifier row of the Dominoes matrix
-     * @param mat - matrix2D
-     * @throws IllegalArgumentException - in case of invalid parameters
+     * @param idRow
+     *            - identifier row of the Dominoes matrix
+     * @param idCol
+     *            - identifier row of the Dominoes matrix
+     * @param mat
+     *            - matrix2D
+     * @throws IllegalArgumentException
+     *             - in case of invalid parameters
      */
     public Dominoes(String idRow, String idCol, IMatrix2D mat, String _device) throws IllegalArgumentException {
-    	this.rowIsAggragatable = false;
-    	this.colIsAggragatable = false;
         this.setIdRow(idRow);
         this.setIdCol(idCol);
 
@@ -120,15 +116,19 @@ public final class Dominoes {
      * Class build. The type, for default, is Derived
      *
      * @param type
-     * @param idRow - identifier row of the Dominoes matrix
-     * @param idCol - identifier row of the Dominoes matrix
-     * @param historic - The dominoes historic derivated
-     * @param mat - matrix2D
-     * @throws IllegalArgumentException - in case of invalid parameters
+     * @param idRow
+     *            - identifier row of the Dominoes matrix
+     * @param idCol
+     *            - identifier row of the Dominoes matrix
+     * @param historic
+     *            - The dominoes historic derivated
+     * @param mat
+     *            - matrix2D
+     * @throws IllegalArgumentException
+     *             - in case of invalid parameters
      */
-    public Dominoes(DominoType type, String idRow, String idCol, Historic historic, Matrix2D mat, String _device) throws IllegalArgumentException {
-    	this.rowIsAggragatable = false;
-    	this.colIsAggragatable = false;
+    public Dominoes(DominoType type, String idRow, String idCol, Historic historic, Matrix2D mat, String _device)
+            throws IllegalArgumentException {
         this.setIdRow(idRow);
         this.setIdCol(idCol);
 
@@ -141,50 +141,28 @@ public final class Dominoes {
         this.type = type;
         this.currentDevice = _device;
     }
-    
-//    /**
-//     * Class build. The type, for default, is Derived
-//     *
-//     * @param type
-//     * @param idRow - identifier row of the Dominos matrix
-//     * @param idCol - identifier row of the Dominos matrix
-//     * @throws IllegalArgumentException - in case of invalid parameters
-//     */
-//    public Dominoes(int type, String idRow, String idCol) throws IllegalArgumentException {
-//    	this.setIdRow(idRow);
-//        this.setIdCol(idCol);
-//
-//        this.historic = new ArrayList<>();
-//        this.historic.add(idRow);
-//        this.historic.add(idCol);
-//
-//        this.type = Dominoes.TYPE_BASIC;
-//        
-//        this.mat = null;
-//    }
 
-    /**
-     * Class Builder This function is used when the user to do a multiplication,
-     * this will return a new matrix with data according with a real
-     * multiplication. The type, for default, is the type of the first parameter
-     *
-     * @param firstOperator The first matrix in this operation
-     * @param secondOperator The second matrix in this operation
-     * @param mat
-     * @return A new matrix
-     */
-   /* public Dominoes(Dominoes firstOperator, Dominoes secondOperator, byte[][] mat) throws IllegalArgumentException {
-        this.historic = new ArrayList<>();
-
-        this.historic.addAll(firstOperator.getHistoric());
-        this.historic.addAll(this.historic.size(), secondOperator.getHistoric());
-
-        this.setIdRow(firstOperator.getIdRow());
-        this.setIdCol(secondOperator.getIdCol());
-
-        this.setMat(mat);
-        this.type = firstOperator.getType();
-    }*/
+    // /**
+    // * Class build. The type, for default, is Derived
+    // *
+    // * @param type
+    // * @param idRow - identifier row of the Dominoes matrix
+    // * @param idCol - identifier row of the Dominoes matrix
+    // * @throws IllegalArgumentException - in case of invalid parameters
+    // */
+    // public Dominoes(int type, String idRow, String idCol) throws
+    // IllegalArgumentException {
+    // this.setIdRow(idRow);
+    // this.setIdCol(idCol);
+    //
+    // this.historic = new ArrayList<>();
+    // this.historic.add(idRow);
+    // this.historic.add(idCol);
+    //
+    // this.type = Dominoes.TYPE_BASIC;
+    //
+    // this.mat = null;
+    // }
 
     /**
      * From this Dominoes, this function will build a piece (graphically)
@@ -192,117 +170,9 @@ public final class Dominoes {
      *
      * @return - A javafx.scene.Group (Graphic) to draw in scene
      */
-    public Group drawDominoes() {
-        
-        Rectangle border = new Rectangle(GRAPH_WIDTH, GRAPH_HEIGHT);
-        border.setFill(Dominoes.COLOR_BORDER);
-        border.setArcHeight(Dominoes.GRAPH_ARC);
-        border.setArcWidth(Dominoes.GRAPH_ARC);
-        border.setX(0);
-        border.setY(0);
-
-        Rectangle back = new Rectangle(GRAPH_WIDTH - 2, GRAPH_HEIGHT - 2);
-        back.setFill(Dominoes.COLOR_BACK);
-        back.setArcHeight(Dominoes.GRAPH_ARC);
-        back.setArcWidth(Dominoes.GRAPH_ARC);
-        back.setX(border.getX() + 1);
-        back.setY(border.getY() + 1);
-
-        Rectangle line = new Rectangle(GRAPH_WIDTH / 2 - 1, border.getHeight() - back.getHeight(), 2, back.getHeight() - 2);
-        line.setFill(Dominoes.COLOR_LINE);
-        line.setArcHeight(Dominoes.GRAPH_ARC);
-        line.setArcWidth(Dominoes.GRAPH_ARC);
-
-        Text idRow = new Text(this.getIdRow());
-        idRow.setFill(Dominoes.COLOR_NORMAL_FONT);
-        idRow.setX(5);
-        idRow.setY(2 * Dominoes.GRAPH_HEIGHT / 5);
-        idRow.toFront();
-        if(this.getIdRow().startsWith(Dominoes.AGGREG_TEXT))
-        	idRow.setFont(new Font("Arial", Dominoes.GRAPH_AGGREG_FONT_SIZE));
-        else
-        	idRow.setFont(new Font("Arial", Dominoes.GRAPH_NORMAL_FONT_SIZE));
-
-        Text idCol = new Text(this.getIdCol());
-        idCol.setFill(Dominoes.COLOR_NORMAL_FONT);
-        idCol.setX(Dominoes.GRAPH_WIDTH / 2 + 5);
-        idCol.setY(2 * Dominoes.GRAPH_HEIGHT / 5);
-        idCol.toFront();
-        if(this.getIdCol().startsWith(Dominoes.AGGREG_TEXT))
-        	idCol.setFont(new Font("Arial", Dominoes.GRAPH_AGGREG_FONT_SIZE));
-        else
-        	idCol.setFont(new Font("Arial", Dominoes.GRAPH_NORMAL_FONT_SIZE));
-
-        String auxHistoric = this.historic.toString();
-        Text historic;
-        if(auxHistoric.length() <= 24){
-        	historic = new Text(auxHistoric);        	
-        }else{
-        	historic = new Text(auxHistoric.substring(0, 24) + "...");
-        }
-        
-        
-        historic.setFont(new Font("Arial", 10));
-        historic.setFill(Dominoes.COLOR_HISTORIC);
-        historic.setX(2);
-        historic.setY(3 * Dominoes.GRAPH_HEIGHT / 5);
-        historic.setWrappingWidth(Dominoes.GRAPH_WIDTH - 2);
-        historic.toFront();
-
-//        Circle circle = new Circle(back.getX() + back.getWidth() / 2, back.getY() + back.getHeight() / 2, 5, Dominoes.COLOR_TYPE);
-        double radius = 5;
-        double circlePadding = 2;
-        double padding = 1;
-        Circle circle = new Circle(0, 0, radius, Dominoes.COLOR_TYPE);
-
-        Text type = new Text();
-        type.setFill(Dominoes.COLOR_NORMAL_FONT);
-        type.setX(circle.getCenterX() - circle.getRadius()/2 - padding);
-        type.setY(circle.getCenterY() + circle.getRadius()/2 + padding);
-        
-        type.setText(this.getType().getCode());
-        switch (this.getType()) {
-            case BASIC:
-                type.setFill(Dominoes.COLOR_INVISIBLE);
-                
-                circle.setFill(Dominoes.COLOR_INVISIBLE);
-            	
-            	historic.setFill(Dominoes.COLOR_INVISIBLE);
-            	
-                break;
-            case DERIVED:
-                type.setFill(Dominoes.COLOR_INVISIBLE);
-                
-                circle.setFill(Dominoes.COLOR_INVISIBLE);
-                
-                border.setFill(Dominoes.COLOR_BORDER_DERIVED);
-                back.setWidth(back.getWidth() - 2);
-                back.setHeight(back.getHeight() - 2);
-                back.setX(back.getX() + 1);
-                back.setY(back.getY() + 1);
-                
-                line.setFill(Dominoes.COLOR_LINE);
-                
-                break;
-            case SUPPORT:
-            case CONFIDENCE:
-            case LIFT:
-                break;
-        }
-        
-        circle.toFront();
-        type.toFront();
-        
-        Group groupType = new Group(circle, type);
-        groupType.setTranslateX(border.getX() + border.getWidth() - (radius + circlePadding));
-        groupType.setTranslateY((radius + circlePadding));
-        groupType.setAutoSizeChildren(true);
-        
-        Group domino = new Group(border, back, line, historic, groupType,idRow, idCol);
-        Tooltip.install(domino, new Tooltip(this.idRow + "x" + this.getIdCol()));
-        return domino;
+    public DominoView drawDominoes() {
+        return new DominoView(this);
     }
-
 
     /**
      * User to obtain the complete historic this
@@ -349,28 +219,24 @@ public final class Dominoes {
         return type;
     }
 
-    
-    public boolean isRowAggregatable(){
-    	return this.rowIsAggragatable;
+    public boolean isRowAggregatable() {
+        return this.rowIsAggragatable;
     }
-    
-    public boolean isColAggregatable(){
-    	return this.colIsAggragatable;
+
+    public boolean isColAggregatable() {
+        return this.colIsAggragatable;
     }
-    
 
     /**
      * Used to change the Historic of this Domino
      *
-     * @param historic The Historic value
+     * @param historic
+     *            The Historic value
      * @throws IllegalArgumentException
      */
     private void setHistoric(Historic historic) {
-        if (historic == null
-                || historic.toString() == null
-                || historic.toString().trim().equals("")
-                || (!historic.getFirstItem().equals(this.idRow) 
-                && !historic.getLastItem().equals(this.idCol))) {
+        if (historic == null || historic.toString() == null || historic.toString().trim().equals("")
+                || (!historic.getFirstItem().equals(this.idRow) && !historic.getLastItem().equals(this.idCol))) {
             throw new IllegalArgumentException("Invalid argument.\nThe Historic attribute is null, void or invalid");
         }
         this.historic = historic;
@@ -379,7 +245,8 @@ public final class Dominoes {
     /**
      * Used to change the Id Column this Domino
      *
-     * @param idCol The Id Column value
+     * @param idCol
+     *            The Id Column value
      * @throws IllegalArgumentException
      */
     private void setIdCol(String idCol) throws IllegalArgumentException {
@@ -392,7 +259,8 @@ public final class Dominoes {
     /**
      * Used to change the Id Row this Domino
      *
-     * @param idRow The Id Row value
+     * @param idRow
+     *            The Id Row value
      * @throws IllegalArgumentException
      */
     private void setIdRow(String idRow) throws IllegalArgumentException {
@@ -405,14 +273,15 @@ public final class Dominoes {
     /**
      * Used to change the Matrix this Domino
      *
-     * @param mat The Matrix value
+     * @param mat
+     *            The Matrix value
      * @throws IllegalArgumentException
      */
-    public void setMat(IMatrix2D mat){
+    public void setMat(IMatrix2D mat) {
         if (mat == null) {
             throw new IllegalArgumentException("Invalid argument.\nThe Mat attribute is null");
         }
-        
+
         this.mat = mat;
     }
 
@@ -422,9 +291,9 @@ public final class Dominoes {
      * @return the historic invert
      */
     public void transpose() {
-        
-        if(!(this.type == DominoType.BASIC)){
-        	this.type = DominoType.DERIVED;
+
+        if (!(this.type == DominoType.BASIC)) {
+            this.type = DominoType.DERIVED;
         }
         if (this.getIdRow().equals(this.getIdCol())) {
             this.type = DominoType.SUPPORT;
@@ -433,15 +302,15 @@ public final class Dominoes {
         this.getHistoric().reverse();
         this.setIdRow(this.getHistoric().getFirstItem());
         this.setIdCol(this.getHistoric().getLastItem());
-        
+
         boolean swap = this.rowIsAggragatable;
         this.rowIsAggragatable = this.colIsAggragatable;
         this.colIsAggragatable = swap;
-        
+
         IMatrix2D _newMat = mat.transpose();
         setMat(_newMat);
     }
-    
+
     /**
      * This function just invert the Historic
      *
@@ -451,82 +320,108 @@ public final class Dominoes {
         IMatrix2D _newMat = mat.confidence(currentDevice.equalsIgnoreCase("GPU"));
         setMat(_newMat);
     }
-    
+
     /**
      * This function reduce the lines of a matrix
      *
      * @return the historic invert
      */
     public boolean reduceRows() {
-        
-    	if(rowIsAggragatable){
-    		return false;
-    	}
-    	
-    	rowIsAggragatable = true;
-    	
-        if(!(this.type == DominoType.BASIC)){
-        	this.type = DominoType.DERIVED;
+
+        if (rowIsAggragatable) {
+            return false;
+        }
+
+        rowIsAggragatable = true;
+
+        if (!(this.type == DominoType.BASIC)) {
+            this.type = DominoType.DERIVED;
         }
         if (this.getIdRow().equals(this.getIdCol())) {
             this.type = DominoType.SUPPORT;
         }
 
-//        this.getHistoric().reverse();
+        // this.getHistoric().reverse();
         this.setIdRow(Dominoes.AGGREG_TEXT + idRow);
         this.historic.reduceRow();
-//        this.setIdCol(this.getHistoric().getLastItem());
-        
-        //this.historic = new Historic("SUM", this.getIdCol());
-        
+        // this.setIdCol(this.getHistoric().getLastItem());
+
+        // this.historic = new Historic("SUM", this.getIdCol());
+
         IMatrix2D _newMat = mat.reduceRows(currentDevice.equalsIgnoreCase("GPU"));
         setMat(_newMat);
-        
+
         _newMat.Debug();
         return true;
     }
 
     public Dominoes multiply(Dominoes dom) {
-    	
-    	Dominoes domResult = new Dominoes(dom.getDevice());
-    	
-    	domResult.type = DominoType.DERIVED;
+
+        Dominoes domResult = new Dominoes(dom.getDevice());
+
+        domResult.type = DominoType.DERIVED;
 
         if (idRow.equals(dom.getIdCol())) {
             domResult.type = DominoType.SUPPORT;
         }
-        
+
         try {
-			domResult.setMat(
-					getMat().multiply(
-							dom.getMat(), currentDevice.equalsIgnoreCase("GPU")));
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-        
+            domResult.setMat(getMat().multiply(dom.getMat(), currentDevice.equalsIgnoreCase("GPU")));
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
         domResult.historic = new Historic(this.getHistoric(), dom.getHistoric());
-        
+
         domResult.setIdRow(getIdRow());
         domResult.setIdCol(dom.getIdCol());
-        
+
         return domResult;
     }
-    
-    public boolean isSquare(){
-    	return getMat().getMatrixDescriptor().getNumRows() == 
-    			getMat().getMatrixDescriptor().getNumCols();    	
+
+    public boolean isSquare() {
+        return getMat().getMatrixDescriptor().getNumRows() == getMat().getMatrixDescriptor().getNumCols();
     }
-    
-    public Dominoes cloneNoMatrix(){
-    	Dominoes cloned = new Dominoes(getIdRow(), getIdCol(), getMat(), getDevice());
-    	
-    	return cloned;
+
+    public Dominoes cloneNoMatrix() {
+        return new Dominoes(getIdRow(), getIdCol(), getMat(), getDevice());
     }
-    
-    public String getDevice(){
-    	return currentDevice;
+
+    public String getDevice() {
+        return currentDevice;
     }
-    
-    
+
+    @Override
+    public String toString() {
+        return historic.toString();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null || !(obj instanceof Dominoes))
+            return false;
+        Dominoes o = (Dominoes) obj;
+
+        boolean ret = type.equals(o.type) && o.colIsAggragatable == colIsAggragatable
+                && o.rowIsAggragatable == rowIsAggragatable && o.currentDevice.equals(currentDevice)
+                && o.historic.equals(historic) && o.idCol.equals(idCol) && o.idRow.equals(idRow) && o.mat.equals(mat);
+        // System.out.println(o + " equals " + this + "? " + ret);
+        // if (o.toString().equals(this.toString())) {
+        // System.out.println(type.equals(o.type));
+        // System.out.println(o.colIsAggragatable == colIsAggragatable);
+        // System.out.println(o.rowIsAggragatable == rowIsAggragatable);
+        // System.out.println(o.currentDevice.equals(currentDevice));
+        // System.out.println(o.historic.equals(historic));
+        // System.out.println(o.idCol.equals(idCol));
+        // System.out.println(o.idRow.equals(idRow));
+        // System.out.println(o.mat.equals(mat));
+        // }
+        return ret;
+    }
+
+    // @Override
+    // public int hashCode() {
+    // return mat.hashCode();
+    // }
 }

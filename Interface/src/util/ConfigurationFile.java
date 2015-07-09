@@ -33,6 +33,7 @@ public class ConfigurationFile {
         File file = new File(path);
 
         if (!file.exists()) {
+        	System.out.println("Configuration file didn't exist --> had to create new file");
             file.createNewFile();
             resetConfiguration(file);
             return;
@@ -114,6 +115,10 @@ public class ConfigurationFile {
                 line = br.readLine();
                 amount++;
             }
+            System.out.println("Configuration: "
+                + "\n\tbeginDate: " + Configuration.beginDate
+                + "\n\tendDate: " + Configuration.endDate);
+            System.out.println("\tPU: " + Configuration.processingUnit);
 
         } catch (IOException ex) {
             throw new IOException(ex.getMessage());

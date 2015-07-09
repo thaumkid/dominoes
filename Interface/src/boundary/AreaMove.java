@@ -6,33 +6,29 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javafx.scene.text.Font;
-import javafx.animation.FillTransition;
-import javafx.animation.ParallelTransition;
-import javafx.animation.RotateTransition;
-import javafx.animation.SequentialTransition;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.scene.Cursor;
 import javafx.scene.Group;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
+import javafx.scene.input.Dragboard;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.shape.Shape;
-import javafx.scene.text.Text;
-import javafx.util.Duration;
 import domain.Configuration;
+import domain.DominoView;
 import domain.Dominoes;
 
-@SuppressWarnings("restriction")
+//@SuppressWarnings("restriction")
 public class AreaMove extends Pane {
 
     private ArrayList<Dominoes> dominoes;
-    private ArrayList<Group> pieces;
+    private ArrayList<DominoView> pieces;
     private final Rectangle background;
 
     private int indexFirstOperatorMultiplication = -1;
@@ -45,7 +41,7 @@ public class AreaMove extends Pane {
 
     private double padding = Configuration.width;
     
-    private boolean transposing = false;
+    private BooleanProperty transposing = new SimpleBooleanProperty();
 
     // Controller Variables
     private List<MenuItem> menuItemAggregateRow = new ArrayList<>();
@@ -64,6 +60,42 @@ public class AreaMove extends Pane {
 
         this.dominoes = new ArrayList<>();
         this.pieces = new ArrayList<>();
+        
+        background.setOnDragDropped(event -> {
+            boolean success = false;
+            Dragboard db = event.getDragboard();
+            if (db.hasContent(Dominoes.clipboardFormat)) {
+                success = true;
+                Object content = db.getContent(Dominoes.clipboardFormat);
+                if (content instanceof Dominoes) {
+                    System.out.println("Drop point is (" + event.getX() + "," + event.getY() + ")");
+                    add((Dominoes) content, event.getX() - DominoView.GRAPH_WIDTH/2, event.getY()-DominoView.GRAPH_HEIGHT/2);
+                } else {
+                    System.out.println("Drop failed..");
+                    success = false;
+                }
+            }
+            event.setDropCompleted(success);
+            event.consume();
+        });
+
+//        background.setOnDragDetected(event -> {
+//            Dragboard dragboard = startDragAndDrop(TransferMode.MOVE);
+//            ClipboardContent content = new ClipboardContent();
+//            content.put(Dominoes.clipboardFormat, domino);
+//            dragboard.setDragView(group.snapshot(null, null));
+//            dragboard.setDragViewOffsetX(event.getX());
+//            dragboard.setDragViewOffsetY(event.getY());
+//            dragboard.setContent(content);
+//            event.consume();
+//        });
+
+        background.setOnDragOver(event -> {
+            if (event.getGestureSource() != background && event.getDragboard().hasContent(Dominoes.clipboardFormat)) {
+                event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
+            }
+            event.consume();
+        });
     }
 
     /**
@@ -73,7 +105,6 @@ public class AreaMove extends Pane {
      */
     public void add(Dominoes domino) {
         this.add(domino, 0, 0);
-
     }
 
     /**
@@ -84,9 +115,9 @@ public class AreaMove extends Pane {
      * @param y The coordinate Y of this new Domino
      */
     public void add(Dominoes domino, double x, double y) {
-        double thisTranslateX = x;
-        double thisTranslateY = y;
-
+        x = x < 0 ? 0 : x;
+        y = y < 0 ? 0 : y;
+        
         ContextMenu minimenu = new ContextMenu();
         
         MenuItem menuItemTranspose = new MenuItem("Transpose");
@@ -108,42 +139,17 @@ public class AreaMove extends Pane {
         Menu menuOperate = new Menu("Operations");
         Menu menuView = new Menu("Views");
 
-        Group group = domino.drawDominoes();
-        group.getChildren().get(Dominoes.GRAPH_HISTORIC).setVisible(Configuration.visibilityHistoric);
+        DominoView group = domino.drawDominoes();
+        group.setVisible(DominoView.Views.GRAPH_HISTORIC,Configuration.visibilityHistoric);
 
-        group.setTranslateX(thisTranslateX);
-        group.setTranslateY(thisTranslateY);
-        if (!this.pieces.isEmpty()) {
-            for (Group g : this.pieces) {
-
-                if (g.getTranslateY() + Dominoes.GRAPH_HEIGHT >= background.prefHeight(-1)) {
-                    thisTranslateX += Dominoes.GRAPH_WIDTH;
-                    thisTranslateY = background.getY();
-                    continue;
-                }
-
-                if ((thisTranslateX >= g.getTranslateX()
-                        && thisTranslateX < g.getTranslateX() + Dominoes.GRAPH_WIDTH
-                        && thisTranslateY >= g.getTranslateY()
-                        && thisTranslateY < g.getTranslateY() + Dominoes.GRAPH_HEIGHT)
-                        || (thisTranslateX + Dominoes.GRAPH_WIDTH >= g.getTranslateX()
-                        && thisTranslateX + Dominoes.GRAPH_WIDTH < g.getTranslateX() + Dominoes.GRAPH_WIDTH
-                        && thisTranslateY >= g.getTranslateY()
-                        && thisTranslateY < g.getTranslateY() + Dominoes.GRAPH_HEIGHT)
-                        || (thisTranslateX >= g.getTranslateX()
-                        && thisTranslateX < g.getTranslateX() + Dominoes.GRAPH_WIDTH
-                        && thisTranslateY + Dominoes.GRAPH_HEIGHT >= g.getTranslateY()
-                        && thisTranslateY + Dominoes.GRAPH_HEIGHT < g.getTranslateY() + Dominoes.GRAPH_HEIGHT)
-                        || (thisTranslateX + Dominoes.GRAPH_WIDTH >= g.getTranslateX()
-                        && thisTranslateX + Dominoes.GRAPH_WIDTH < g.getTranslateX() + Dominoes.GRAPH_WIDTH
-                        && thisTranslateY + Dominoes.GRAPH_HEIGHT >= g.getTranslateY()
-                        && thisTranslateY + Dominoes.GRAPH_HEIGHT < g.getTranslateY() + Dominoes.GRAPH_HEIGHT)) {
-
-                    thisTranslateY = g.getTranslateY() + Dominoes.GRAPH_HEIGHT;
-                }
+        group.setTranslateX(x);
+        group.setTranslateY(y);
+        // TODO note the bug here. If two pieces are added, and then you swap their positions,
+        //      what happens when you add a third piece? JAH
+        for (DominoView piece : pieces) {
+            if (group.getBoundsInParent().intersects(piece.getBoundsInParent())) {
+                group.setTranslateY(piece.getTranslateY() + DominoView.GRAPH_HEIGHT);
             }
-            group.setTranslateY(thisTranslateY);
-            group.setTranslateX(thisTranslateX);
         }
 
         this.pieces.add(group);
@@ -154,208 +160,149 @@ public class AreaMove extends Pane {
           //  menuItemViewGraph.setDisable(true);
         //}
 
-        group.setOnMouseEntered(new EventHandler<MouseEvent>() {
+        group.setOnMouseEntered(event -> cursorProperty().set(Cursor.OPEN_HAND));
+        group.setOnMouseDragged(event -> {
+            double offsetX = event.getSceneX() - srcSceneX;
+            double offsetY = event.getSceneY() - srcSceneY;
+            double newTranslateX = srcTranslateX + offsetX;
+            double newTranslateY = srcTranslateY + offsetY;
 
-            @Override
-            public void handle(MouseEvent event) {
-                cursorProperty().set(Cursor.OPEN_HAND);
+            // detect move out
+            boolean detecMoveOutX = false;
+            boolean detecMoveOutY = false;
+            if (newTranslateX < background.getX()) {
+                ((Group) (event.getSource())).setTranslateX(background.getX());
+
+                detecMoveOutX = true;
             }
-        });
-        group.setOnMouseDragged(new EventHandler<MouseEvent>() {
-
-            @Override
-            public void handle(MouseEvent event) {
-
-                double offsetX = event.getSceneX() - srcSceneX;
-                double offsetY = event.getSceneY() - srcSceneY;
-                double newTranslateX = srcTranslateX + offsetX;
-                double newTranslateY = srcTranslateY + offsetY;
-
-                // detect move out
-                boolean detecMoveOutX = false;
-                boolean detecMoveOutY = false;
-                if (newTranslateX < background.getX()) {
-                    ((Group) (event.getSource())).setTranslateX(background.getX());
-
-                    detecMoveOutX = true;
-                }
-                if (newTranslateY < background.getY()) {
-                    ((Group) (event.getSource())).setTranslateY(background.getY());
-                    detecMoveOutY = true;
-                }
-                if (newTranslateX + ((Group) (event.getSource())).prefWidth(-1) > background.getX() + background.getWidth()) {
-                    ((Group) (event.getSource())).setTranslateX(background.getX() + background.getWidth() - ((Group) (event.getSource())).prefWidth(-1));
-                    detecMoveOutX = true;
-                }
-                if (newTranslateY + ((Group) (event.getSource())).prefHeight(-1) > background.getY() + background.getHeight()) {
-                    ((Group) (event.getSource())).setTranslateY(background.getY() + background.getHeight() - ((Group) (event.getSource())).prefHeight(-1));
-                    detecMoveOutY = true;
-                }
-
-                if (!detecMoveOutX) {
-                    ((Group) (event.getSource())).setTranslateX(newTranslateX);
-                }
-                if (!detecMoveOutY) {
-                    ((Group) (event.getSource())).setTranslateY(newTranslateY);
-                }
-
-                // detect multiplication
-                int index = pieces.indexOf(group);
-
-                for (int j = 0; j < pieces.size(); j++) {
-
-                    if (index != j && detectMultiplication(index, j)) {
-                        //menuItemReduceLines.setDisable(false);
-
-                        break;
-                    } else {
-                        //menuItemReduceLines.setDisable(true);
-                    }
-                }
+            if (newTranslateY < background.getY()) {
+                ((Group) (event.getSource())).setTranslateY(background.getY());
+                detecMoveOutY = true;
             }
-        });
-        group.setOnMousePressed(new EventHandler<MouseEvent>() {
-
-            @Override
-            public void handle(MouseEvent event) {
-
-                srcSceneX = event.getSceneX();
-                srcSceneY = event.getSceneY();
-                srcTranslateX = ((Group) (event.getSource())).getTranslateX();
-                srcTranslateY = ((Group) (event.getSource())).getTranslateY();
-
-                group.toFront();
-                cursorProperty().set(Cursor.CLOSED_HAND);
+            if (newTranslateX + ((Group) (event.getSource())).prefWidth(-1) > background.getX() + background.getWidth()) {
+                ((Group) (event.getSource())).setTranslateX(background.getX() + background.getWidth() - ((Group) (event.getSource())).prefWidth(-1));
+                detecMoveOutX = true;
             }
-        });
-        group.setOnMouseReleased(new EventHandler<MouseEvent>() {
-
-            @Override
-            public void handle(MouseEvent event) {
-                cursorProperty().set(Cursor.OPEN_HAND);
-                try {
-                    multiply();
-                } catch (IOException ex) {
-                    System.err.println(ex.getMessage());
-                    ex.printStackTrace();
-                }
+            if (newTranslateY + ((Group) (event.getSource())).prefHeight(-1) > background.getY() + background.getHeight()) {
+                ((Group) (event.getSource())).setTranslateY(background.getY() + background.getHeight() - ((Group) (event.getSource())).prefHeight(-1));
+                detecMoveOutY = true;
             }
-        });
-        group.setOnMouseExited(new EventHandler<MouseEvent>() {
 
-            @Override
-            public void handle(MouseEvent event) {
-                cursorProperty().set(Cursor.DEFAULT);
+            if (!detecMoveOutX) {
+                ((Group) (event.getSource())).setTranslateX(newTranslateX);
             }
-        });
-        group.setOnMouseClicked(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent mouseEvent) {
-                if (mouseEvent.getButton().equals(MouseButton.PRIMARY)) {
+            if (!detecMoveOutY) {
+                ((Group) (event.getSource())).setTranslateY(newTranslateY);
+            }
 
-                    if (mouseEvent.getClickCount() == 2) {
-                        try {
-                        	if(!transposing){
-                        		transpose(group);
-                        	}
-                        } catch (IOException ex) {
-                            System.err.println(ex.getMessage());
-                            ex.printStackTrace();
-                        }
-                    }
-                }
-            }
-        });
-        group.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent e) {
-                if (e.getButton() == MouseButton.SECONDARY) {
-                    minimenu.show(group, e.getScreenX(), e.getScreenY());
+            // detect multiplication
+            int index = pieces.indexOf(group);
+
+            for (int j = 0; j < pieces.size(); j++) {
+
+                if (index != j && detectMultiplication(index, j)) {
+                    //menuItemReduceLines.setDisable(false);
+
+                    break;
                 } else {
-                    minimenu.hide();
+                    //menuItemReduceLines.setDisable(true);
                 }
             }
         });
-        minimenu.addEventFilter(MouseEvent.MOUSE_RELEASED, new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent event) {
-                if (event.getButton() == MouseButton.SECONDARY) {
-                    event.consume();
-                }
+        group.setOnMousePressed(event -> {
+            srcSceneX = event.getSceneX();
+            srcSceneY = event.getSceneY();
+            srcTranslateX = ((Group) (event.getSource())).getTranslateX();
+            srcTranslateY = ((Group) (event.getSource())).getTranslateY();
+
+            group.toFront();
+            cursorProperty().set(Cursor.CLOSED_HAND);
+        });
+        group.setOnMouseReleased(event -> {
+            cursorProperty().set(Cursor.OPEN_HAND);
+            try {
+                multiply();
+            } catch (IOException ex) {
+                System.err.println(ex.getMessage());
+                ex.printStackTrace();
             }
         });
-        minimenu.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                if (((MenuItem) event.getTarget()).getText().equals(menuItemSaveInList.getText())) {
-                    System.out.println("saving");
+        group.setOnMouseExited(event -> cursorProperty().set(Cursor.DEFAULT));
+        group.setOnMouseClicked(event -> {
+            if (event.getButton().equals(MouseButton.PRIMARY)) {
+
+                if (event.getClickCount() == 2) {
                     try {
-                        saveAndSendToList(group);
-                        close(group);
-                    } catch (IOException ex) {
-                        System.out.println(ex.getMessage());
-                    }
-                } else if (((MenuItem) event.getTarget()).getText().equals(menuItemClose.getText())) {
-                    System.out.println("closing");
-                    closePiece(group);
-                }
-            }
-        });
-        int index = dominoes.indexOf(domino);
-        menuOperate.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                if (((MenuItem) event.getTarget()).getText().equals(menuItemTranspose.getText())) {
-                    try {
-                    	if(!transposing){
-                    		System.out.println("transposing");
-                        	transpose(group);
+                    	if(!transposing.get()){
+                    		transpose(group);
                     	}
                     } catch (IOException ex) {
                         System.err.println(ex.getMessage());
                         ex.printStackTrace();
                     }
-                } else if (((MenuItem) event.getTarget()).getText().equals(menuItemAggregateRow.get(index).getText())) {
-                    try {
-                        reduceColumns(group);
-                    } catch (IOException ex) {
-                        System.err.println(ex.getMessage());
-                        ex.printStackTrace();
-                    }
-
-                } else if (((MenuItem) event.getTarget()).getText().equals(menuItemAggregateCol.get(index).getText())) {
-                    try {
-                        reduceLines(group);
-                    } catch (IOException ex) {
-                        System.err.println(ex.getMessage());
-                        ex.printStackTrace();
-                    }
-
-                } else if (((MenuItem) event.getTarget()).getText().equals(menuItemConfidence.getText())) {
-                	try {
-						confidence(group);
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-        		}
+                }
             }
         });
-        menuView.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                if (((MenuItem) event.getTarget()).getText().equals(menuItemViewGraph.getText())) {
-                    drawGraph(domino);
-                } else if (((MenuItem) event.getTarget()).getText().equals(menuItemViewMatrix.getText())) {
-                    drawMatrix(domino);
-                } else if (((MenuItem) event.getTarget()).getText().equals(menuItemViewChart.getText())) {
-                    drawChart(domino);
-                } else if (((MenuItem) event.getTarget()).getText().equals(menuItemViewTree.getText())) {
-                    drawTree(domino);
-                } else if (((MenuItem) event.getTarget()).getText().equals(menuItemViewLineChart.getText())) {
-        			drawLineChart(domino);
-        		}
+        group.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+            if (event.getButton() == MouseButton.SECONDARY) {
+                minimenu.show(group, event.getScreenX(), event.getScreenY());
+            } else {
+                minimenu.hide();
             }
+        });
+        minimenu.addEventFilter(MouseEvent.MOUSE_RELEASED, event -> {
+            if (event.getButton() == MouseButton.SECONDARY) {
+                event.consume();
+            }
+        });
+        minimenu.setOnAction(event -> {
+            if (((MenuItem) event.getTarget()).getText().equals(menuItemSaveInList.getText())) {
+                System.out.println("saving");
+                try {
+                    saveAndSendToList(group);
+                    close(group);
+                } catch (IOException ex) {
+                    System.out.println(ex.getMessage());
+                }
+            } else if (((MenuItem) event.getTarget()).getText().equals(menuItemClose.getText())) {
+                System.out.println("closing");
+                closePiece(group);
+            }
+        });
+        int index = dominoes.indexOf(domino);
+        menuOperate.setOnAction(event -> {
+            try {
+                String text = ((MenuItem) event.getTarget()).getText();
+                if (text.equals(menuItemTranspose.getText())) {
+                	if(!transposing.get()){
+                		System.out.println("transposing");
+                    	transpose(group);
+                	}
+                } else if (text.equals(menuItemAggregateRow.get(index).getText())) {
+                    reduceColumns(group);
+                } else if (text.equals(menuItemAggregateCol.get(index).getText())) {
+                    reduceLines(group);
+                } else if (text.equals(menuItemConfidence.getText())) {
+					confidence(group);
+				}
+            } catch (IOException ex) {
+                System.err.println(ex.getMessage());
+                ex.printStackTrace();
+            }
+        });
+        menuView.setOnAction(event -> {
+            String text = ((MenuItem) event.getTarget()).getText();
+            if (text.equals(menuItemViewGraph.getText())) {
+                drawGraph(domino);
+            } else if (text.equals(menuItemViewMatrix.getText())) {
+                drawMatrix(domino);
+            } else if (text.equals(menuItemViewChart.getText())) {
+                drawChart(domino);
+            } else if (text.equals(menuItemViewTree.getText())) {
+                drawTree(domino);
+            } else if (text.equals(menuItemViewLineChart.getText())) {
+    			drawLineChart(domino);
+    		}
         });
         
 
@@ -365,20 +312,7 @@ public class AreaMove extends Pane {
         		menuItemViewGraph, menuItemViewMatrix/*, menuItemViewTree*/);
         minimenu.getItems().addAll(menuOperate, menuView, menuItemSaveInList, menuItemClose);
     }
-
-    /**
-     * This function is called to change the parts color
-     */
-    void changeColor() {
-        for (Group group : this.pieces) {
-            ((Shape) group.getChildren().get(Dominoes.GRAPH_FILL)).setFill(Dominoes.COLOR_BACK);
-            ((Shape) group.getChildren().get(Dominoes.GRAPH_LINE)).setFill(Dominoes.COLOR_BORDER);
-            ((Shape) group.getChildren().get(Dominoes.GRAPH_BORDER)).setFill(Dominoes.COLOR_BORDER);
-            ((Shape) group.getChildren().get(Dominoes.GRAPH_ID_ROW)).setFill(Dominoes.COLOR_NORMAL_FONT);
-            ((Shape) group.getChildren().get(Dominoes.GRAPH_ID_COL)).setFill(Dominoes.COLOR_NORMAL_FONT);
-        }
-    }
-
+    
     /**
      * This function remove all parts in this area move
      */
@@ -416,7 +350,7 @@ public class AreaMove extends Pane {
     /**
      * To detect a multiplication will be used the interception between the
      * pieces, detecting by left or detecting by right has different
-     * significates. All detectiong are ever in relation to index1 (left ou
+     * significates. All detections are ever in relation to index1 (left or
      * right)
      *
      * @param index1 - piece index one
@@ -424,128 +358,68 @@ public class AreaMove extends Pane {
      */
     private boolean detectMultiplication(int index1, int index2) {
 
-        Group g1 = this.pieces.get(index1);
-        Group g2 = this.pieces.get(index2);
+        DominoView g1 = this.pieces.get(index1);
+        DominoView g2 = this.pieces.get(index2);
         Dominoes d1 = this.dominoes.get(index1);
         Dominoes d2 = this.dominoes.get(index2);
+        
+        if (g1.getBoundsInParent().intersects(g2.getBoundsInParent())) {
+            if (g1.getTranslateX() < g2.getTranslateX()) {
+                if (d1.getIdCol().equals(d2.getIdRow())
+                        && !d1.getIdCol().contains(Dominoes.AGGREG_TEXT)
+                        && d1.getMat().getMatrixDescriptor().getNumCols() == d2.getMat().getMatrixDescriptor().getNumRows()) {
+                    g1.colorOperateCol();
+                    g2.colorOperateRow();
+                    
+//                    g1.setTranslateX(g2.getTranslateX() - DominoView.GRAPH_WIDTH + paddingToCoupling);
+//                    g1.setTranslateY(g2.getTranslateY());
 
-        int paddingToCoupling = 1;
+                    this.indexFirstOperatorMultiplication = index1;
+                    this.indexSecondOperatorMultiplication = index2;
 
-        boolean detect = false;
+                    return true;
+                } else {
+                    g1.colorNoOperateCol();
+                    g1.colorNormalRow();
+                    g2.colorNoOperateRow();
+                    g2.colorNormalCol();
 
-        if ((g1.getTranslateX() >= g2.getTranslateX() + Dominoes.GRAPH_WIDTH / 2
-                && g1.getTranslateX() <= g2.getTranslateX() + Dominoes.GRAPH_WIDTH)
-                && (g1.getTranslateY() >= g2.getTranslateY()
-                && g1.getTranslateY() <= g2.getTranslateY() + Dominoes.GRAPH_HEIGHT)) {
-
-            if (d1.getIdRow().equals(d2.getIdCol())
-            		&& !d1.getIdRow().contains(Dominoes.AGGREG_TEXT)
-                    && d1.getMat().getMatrixDescriptor().getNumRows() == d2.getMat().getMatrixDescriptor().getNumCols() ) {
-
-                ((Text) g1.getChildren().get(Dominoes.GRAPH_ID_ROW)).setFill(Dominoes.COLOR_OPERATE_FONT);
-                ((Text) g2.getChildren().get(Dominoes.GRAPH_ID_COL)).setFill(Dominoes.COLOR_OPERATE_FONT);
-
-                g1.setTranslateX(g2.getTranslateX() + Dominoes.GRAPH_WIDTH - paddingToCoupling);
-                g1.setTranslateY(g2.getTranslateY());
-
-                this.indexFirstOperatorMultiplication = index2;
-                this.indexSecondOperatorMultiplication = index1;
-
-                return true;
+                    this.indexFirstOperatorMultiplication = -1;
+                    this.indexSecondOperatorMultiplication = -1;
+                    return false;
+                }
             } else {
-                ((Text) g1.getChildren().get(Dominoes.GRAPH_ID_ROW)).setFill(Dominoes.COLOR_NO_OPERATION_FONT);
-                ((Text) g2.getChildren().get(Dominoes.GRAPH_ID_COL)).setFill(Dominoes.COLOR_NO_OPERATION_FONT);
-                detect = true;
-            }
+                if (d1.getIdRow().equals(d2.getIdCol())
+                        && !d1.getIdRow().contains(Dominoes.AGGREG_TEXT)
+                        && d1.getMat().getMatrixDescriptor().getNumRows() == d2.getMat().getMatrixDescriptor().getNumCols() ) {
+                    g1.colorOperateRow();
+                    g2.colorOperateCol();
+                    
+//                    g1.setTranslateX(g2.getTranslateX() + DominoView.GRAPH_WIDTH - paddingToCoupling);
+//                    g1.setTranslateY(g2.getTranslateY());
 
-        } else if ((g1.getTranslateX() >= g2.getTranslateX() + Dominoes.GRAPH_WIDTH / 2
-                && g1.getTranslateX() <= g2.getTranslateX() + Dominoes.GRAPH_WIDTH)
-                && (g1.getTranslateY() + Dominoes.GRAPH_HEIGHT >= g2.getTranslateY()
-                && g1.getTranslateY() + Dominoes.GRAPH_HEIGHT <= g2.getTranslateY()
-                + Dominoes.GRAPH_HEIGHT)) {
+                    this.indexFirstOperatorMultiplication = index2;
+                    this.indexSecondOperatorMultiplication = index1;
 
-            if (d1.getIdRow().equals(d2.getIdCol())
-            		&& !d1.getIdRow().contains(Dominoes.AGGREG_TEXT)
-                    && d1.getMat().getMatrixDescriptor().getNumRows() == d2.getMat().getMatrixDescriptor().getNumCols()) {
-
-                ((Text) g1.getChildren().get(Dominoes.GRAPH_ID_ROW)).setFill(Dominoes.COLOR_OPERATE_FONT);
-                ((Text) g2.getChildren().get(Dominoes.GRAPH_ID_COL)).setFill(Dominoes.COLOR_OPERATE_FONT);
-
-                g1.setTranslateX(g2.getTranslateX() + Dominoes.GRAPH_WIDTH - paddingToCoupling);
-                g1.setTranslateY(g2.getTranslateY());
-
-                this.indexFirstOperatorMultiplication = index2;
-                this.indexSecondOperatorMultiplication = index1;
-
-                return true;
-
-            } else {
-                ((Text) g1.getChildren().get(Dominoes.GRAPH_ID_ROW)).setFill(Dominoes.COLOR_NO_OPERATION_FONT);
-                ((Text) g2.getChildren().get(Dominoes.GRAPH_ID_COL)).setFill(Dominoes.COLOR_NO_OPERATION_FONT);
-                detect = true;
-            }
-
-        } else if ((g1.getTranslateX() + Dominoes.GRAPH_WIDTH >= g2.getTranslateX()
-                && g1.getTranslateX() + Dominoes.GRAPH_WIDTH <= g2.getTranslateX() + Dominoes.GRAPH_WIDTH / 2)
-                && (g1.getTranslateY() >= g2.getTranslateY()
-                && g1.getTranslateY() <= g2.getTranslateY() + Dominoes.GRAPH_HEIGHT)) {
-
-            if (d1.getIdCol().equals(d2.getIdRow())
-            		&& !d1.getIdCol().contains(Dominoes.AGGREG_TEXT)
-                    && d1.getMat().getMatrixDescriptor().getNumCols() == d2.getMat().getMatrixDescriptor().getNumRows()) {
-
-                ((Text) g1.getChildren().get(Dominoes.GRAPH_ID_COL)).setFill(Dominoes.COLOR_OPERATE_FONT);
-                ((Text) g2.getChildren().get(Dominoes.GRAPH_ID_ROW)).setFill(Dominoes.COLOR_OPERATE_FONT);
-
-                g1.setTranslateX(g2.getTranslateX() - Dominoes.GRAPH_WIDTH + paddingToCoupling);
-                g1.setTranslateY(g2.getTranslateY());
-
-                this.indexFirstOperatorMultiplication = index1;
-                this.indexSecondOperatorMultiplication = index2;
-
-                return true;
-            } else {
-                ((Text) g1.getChildren().get(Dominoes.GRAPH_ID_COL)).setFill(Dominoes.COLOR_NO_OPERATION_FONT);
-                ((Text) g2.getChildren().get(Dominoes.GRAPH_ID_ROW)).setFill(Dominoes.COLOR_NO_OPERATION_FONT);
-                detect = true;
-            }
-
-        } else if ((g1.getTranslateX() + Dominoes.GRAPH_WIDTH >= g2.getTranslateX()
-                && g1.getTranslateX() + Dominoes.GRAPH_WIDTH <= g2.getTranslateX() + Dominoes.GRAPH_WIDTH / 2)
-                && (g1.getTranslateY() + Dominoes.GRAPH_HEIGHT >= g2.getTranslateY()
-                && g1.getTranslateY() + Dominoes.GRAPH_HEIGHT <= g2.getTranslateY() + Dominoes.GRAPH_HEIGHT)) {
-
-            if (d1.getIdCol().equals(d2.getIdRow())
-            		&& !d1.getIdCol().contains(Dominoes.AGGREG_TEXT)
-                    && d1.getMat().getMatrixDescriptor().getNumCols() == d2.getMat().getMatrixDescriptor().getNumRows()) {
-
-                ((Text) g1.getChildren().get(Dominoes.GRAPH_ID_COL)).setFill(Dominoes.COLOR_OPERATE_FONT);
-                ((Text) g2.getChildren().get(Dominoes.GRAPH_ID_ROW)).setFill(Dominoes.COLOR_OPERATE_FONT);
-
-                g1.setTranslateX(g2.getTranslateX() - Dominoes.GRAPH_WIDTH + paddingToCoupling);
-                g1.setTranslateY(g2.getTranslateY());
-
-                this.indexFirstOperatorMultiplication = index1;
-                this.indexSecondOperatorMultiplication = index2;
-
-                return true;
-            } else {
-                ((Text) g1.getChildren().get(Dominoes.GRAPH_ID_COL)).setFill(Dominoes.COLOR_NO_OPERATION_FONT);
-                ((Text) g2.getChildren().get(Dominoes.GRAPH_ID_ROW)).setFill(Dominoes.COLOR_NO_OPERATION_FONT);
-
-                detect = true;
+                    return true;
+                } else {
+                    g1.colorNoOperateRow();
+                    g1.colorNormalCol();
+                    g2.colorNoOperateCol();
+                    g2.colorNormalRow();
+                    this.indexFirstOperatorMultiplication = -1;
+                    this.indexSecondOperatorMultiplication = -1;
+                    return false;
+                }
             }
         }
+        g1.colorNormalRow();
+        g1.colorNormalCol();
+        g2.colorNormalRow();
+        g2.colorNormalCol();
 
-        if (!detect) {
-            ((Text) g1.getChildren().get(Dominoes.GRAPH_ID_ROW)).setFill(Dominoes.COLOR_NORMAL_FONT);
-            ((Text) g1.getChildren().get(Dominoes.GRAPH_ID_COL)).setFill(Dominoes.COLOR_NORMAL_FONT);
-            ((Text) g2.getChildren().get(Dominoes.GRAPH_ID_ROW)).setFill(Dominoes.COLOR_NORMAL_FONT);
-            ((Text) g2.getChildren().get(Dominoes.GRAPH_ID_COL)).setFill(Dominoes.COLOR_NORMAL_FONT);
-
-            this.indexFirstOperatorMultiplication = -1;
-            this.indexSecondOperatorMultiplication = -1;
-        }
+        this.indexFirstOperatorMultiplication = -1;
+        this.indexSecondOperatorMultiplication = -1;
 
         return false;
     }
@@ -596,9 +470,7 @@ public class AreaMove extends Pane {
      * @return True in affirmative case
      */
     public boolean remove(Group group) {
-        int index = -1;
-        index = this.pieces.indexOf(group);
-        return remove(index);
+        return remove(pieces.indexOf(group));
 
     }
 
@@ -677,11 +549,7 @@ public class AreaMove extends Pane {
      * @param visibility True to define visible the historic
      */
     void setVisibleHistoric() {
-    	boolean visibility = Configuration.visibilityHistoric;
-        for (Group group : pieces) {
-            group.getChildren().get(Dominoes.GRAPH_HISTORIC).setVisible(visibility);
-        }
-        
+    	pieces.forEach(dominoView -> dominoView.setVisible(DominoView.Views.GRAPH_HISTORIC, Configuration.visibilityHistoric));
     }
     
     /**
@@ -690,156 +558,25 @@ public class AreaMove extends Pane {
      * @param visibility True to define visible the type
      */
     void setVisibleType() {
-    	boolean visibility = Configuration.visibilityType;
-        for (Group group : pieces) {
-            group.getChildren().get(Dominoes.GRAPH_TYPE).setVisible(visibility);
-        }
+    	pieces.forEach(dominoView -> dominoView.setVisible(DominoView.Views.GRAPH_TYPE,Configuration.visibilityType));
         
     }
 
     /**
-     * This function only maked a simple animation to tranpose a matrix
+     * This function makes a simple animation to tranpose a matrix
      *
      * @param piece The piece to animate
      */
-    private void transpose(Group piece) throws IOException {
-    	transposing = true;
-    	
-        int duration = 500;
-        
-        double startAngle = piece.getRotate();
-        
-        int index = pieces.indexOf(piece); 
+    private void transpose(DominoView piece) throws IOException {
+    	int index = pieces.indexOf(piece); 
         MenuItem swapMenu = menuItemAggregateRow.get(index);
         menuItemAggregateRow.set(index, menuItemAggregateCol.get(index));
         menuItemAggregateCol.set(index, swapMenu);
         
-        Dominoes domino = control.Controller.tranposeDominoes(this.dominoes.get(this.pieces.indexOf(piece)));
-        Group swap = domino.drawDominoes();
+        Dominoes domino = control.Controller.tranposeDominoes(this.dominoes.get(index));
+        DominoView swap = domino.drawDominoes();
         
-        double swapFontSize = ((Text)piece.getChildren().get(Dominoes.GRAPH_ID_COL)).getFont().getSize();
-        ((Text)piece.getChildren().get(Dominoes.GRAPH_ID_COL)).setFont(((Text)piece.getChildren().get(Dominoes.GRAPH_ID_ROW)).getFont());
-        ((Text)piece.getChildren().get(Dominoes.GRAPH_ID_ROW)).setFont(new Font(swapFontSize));
-        
-        double translateX = ((Text)piece.getChildren().get(Dominoes.GRAPH_ID_ROW)).getX();
-        ((Text)piece.getChildren().get(Dominoes.GRAPH_ID_ROW)).setX(((Text)piece.getChildren().get(Dominoes.GRAPH_ID_COL)).getX());
-        ((Text)piece.getChildren().get(Dominoes.GRAPH_ID_COL)).setX(translateX);       
-        
-        ((Text)piece.getChildren().get(Dominoes.GRAPH_ID_ROW)).setText(((Text)swap.getChildren().get(Dominoes.GRAPH_ID_ROW)).getText());
-        ((Text)piece.getChildren().get(Dominoes.GRAPH_ID_COL)).setText(((Text)swap.getChildren().get(Dominoes.GRAPH_ID_COL)).getText());
-        
-        RotateTransition rtPiece = new RotateTransition(Duration.millis(duration));
-        rtPiece.setFromAngle(startAngle);
-        rtPiece.setToAngle(startAngle + 180);
-
-        RotateTransition rtPieceRow = new RotateTransition(Duration.millis(duration));
-        rtPieceRow.setFromAngle(rtPiece.getFromAngle());
-        rtPieceRow.setToAngle(startAngle - 180);
-
-        RotateTransition rtPieceCol = new RotateTransition(Duration.millis(duration));
-        rtPieceCol.setFromAngle(rtPiece.getFromAngle());
-        rtPieceCol.setToAngle(rtPieceRow.getToAngle());
-
-        RotateTransition rtType = new RotateTransition(Duration.millis(duration));
-        rtType.setFromAngle(rtPiece.getFromAngle());
-        rtType.setToAngle(rtPiece.getToAngle());
-        
-        Color colorHistoric = (Color)((Text)piece.getChildren().get(Dominoes.GRAPH_HISTORIC)).getFill();
-        FillTransition ftHistoric1 = new FillTransition(Duration.millis(duration));
-        ftHistoric1.setFromValue(colorHistoric);
-        ftHistoric1.setToValue(Dominoes.COLOR_INVISIBLE);
-        
-        FillTransition ftHistoric2 = new FillTransition(Duration.millis(duration));
-        ftHistoric2.setFromValue(ftHistoric1.getToValue());
-        ftHistoric2.setToValue(ftHistoric1.getFromValue());
-        
-        Group groupType = (Group) piece.getChildren().get(Dominoes.GRAPH_TYPE);
-        Color colorType = (Color) ((Shape) groupType.getChildren().get(0)).getFill();
-        FillTransition ftType1 = new FillTransition(Duration.millis(duration));
-        ftType1.setFromValue(colorType);
-        ftType1.setToValue(Dominoes.COLOR_INVISIBLE);
-        
-        Color colorFontType = (Color) ((Text)groupType.getChildren().get(1)).getFill();
-        FillTransition ftType2 = new FillTransition(Duration.millis(duration));
-        ftType2.setFromValue(colorFontType);
-        ftType2.setToValue(Dominoes.COLOR_INVISIBLE);
-        
-        FillTransition ftType3 = new FillTransition(Duration.millis(duration));
-        ftType3.setFromValue(ftType1.getToValue());
-        ftType3.setToValue(ftType1.getFromValue());
-        
-        FillTransition ftType4 = new FillTransition(Duration.millis(duration));
-        ftType4.setFromValue(ftType2.getToValue());
-        ftType4.setToValue(ftType2.getFromValue());
-
-        ParallelTransition transition1_1 = new ParallelTransition(new SequentialTransition(groupType.getChildren().get(0), ftType1));
-        ParallelTransition transition1_2 = new ParallelTransition(new SequentialTransition(groupType.getChildren().get(1), ftType2));
-        ParallelTransition transition1_3 = new ParallelTransition(piece.getChildren().get(Dominoes.GRAPH_HISTORIC), ftHistoric1);
-        
-        transition1_1.play();
-        transition1_2.play();
-        transition1_3.play();
-        
-        ParallelTransition transition2_1 = new ParallelTransition(piece, rtPiece);
-        ParallelTransition transition2_2 = new ParallelTransition(piece.getChildren().get(Dominoes.GRAPH_ID_ROW), rtPieceRow);
-        ParallelTransition transition2_3 = new ParallelTransition(piece.getChildren().get(Dominoes.GRAPH_ID_COL), rtPieceCol);
-        
-        if(!colorFontType.equals(Dominoes.COLOR_INVISIBLE)
-        		|| !colorHistoric.equals(Dominoes.COLOR_INVISIBLE)){
-        	transition2_1.setDelay(Duration.millis(duration));
-        	transition2_2.setDelay(Duration.millis(duration));
-        	transition2_3.setDelay(Duration.millis(duration));
-        }
-        
-        transition2_1.play();
-        transition2_2.play();
-        transition2_3.play();
-        
-        ParallelTransition transition3_1 = new ParallelTransition(piece.getChildren().get(Dominoes.GRAPH_HISTORIC), ftHistoric2);
-        ParallelTransition transition3_2 = new ParallelTransition(groupType.getChildren().get(0), ftType3);
-        ParallelTransition transition3_3 = new ParallelTransition(groupType.getChildren().get(1), ftType4);
-        
-        if(!colorFontType.equals(Dominoes.COLOR_INVISIBLE)
-        		|| !colorHistoric.equals(Dominoes.COLOR_INVISIBLE)){
-        	transition3_1.setDelay(Duration.millis(2 * duration));
-        	transition3_2.setDelay(Duration.millis(2 * duration));
-        	transition3_3.setDelay(Duration.millis(2 * duration));
-        }
-        
-        transition3_1.play();
-        transition3_2.play();
-        transition3_3.play();
-        
-        transition1_1.setOnFinished(new EventHandler<ActionEvent>() {
-			
-			@Override
-			public void handle(ActionEvent arg0) {
-				
-				double x = ((Group) piece.getChildren().get(Dominoes.GRAPH_TYPE)).getTranslateX();
-	            double y = ((Group) piece.getChildren().get(Dominoes.GRAPH_TYPE)).getTranslateY();
-	            x = Math.abs(Dominoes.GRAPH_WIDTH - x);
-	            y = Math.abs(Dominoes.GRAPH_HEIGHT - y);
-	            ((Group) piece.getChildren().get(Dominoes.GRAPH_TYPE)).setTranslateX(x);
-	            ((Group) piece.getChildren().get(Dominoes.GRAPH_TYPE)).setTranslateY(y);
-	            
-	            ((Text)piece.getChildren().get(Dominoes.GRAPH_HISTORIC)).setRotate(startAngle - 180);
-	            ((Group) piece.getChildren().get(Dominoes.GRAPH_TYPE)).setRotate(startAngle - 180);
-	            
-	            ((Text)piece.getChildren().get(Dominoes.GRAPH_HISTORIC)).setText(((Text)swap.getChildren().get(Dominoes.GRAPH_HISTORIC)).getText());
-	            ((Text) ((Group) piece.getChildren().get(Dominoes.GRAPH_TYPE)).getChildren().get(1)).setText(((Text) ((Group) swap.getChildren().get(Dominoes.GRAPH_TYPE)).getChildren().get(1)).getText());
-				
-			}
-		});
-        
-        transition3_3.setOnFinished(new EventHandler<ActionEvent>() {
-			
-			@Override
-			public void handle(ActionEvent arg0) {
-				transposing = false;
-				
-			}
-		});
-
+        piece.animateTranspose(swap,transposing);
     }
     
     /**
@@ -847,7 +584,7 @@ public class AreaMove extends Pane {
      *
      * @param piece The piece to animate
      */
-    private void reduceLines(Group piece) throws IOException {
+    private void reduceLines(DominoView piece) throws IOException {
         
     	int index = this.pieces.indexOf(piece);
     	Dominoes toReduce = this.dominoes.get(index);
@@ -855,9 +592,8 @@ public class AreaMove extends Pane {
     		Dominoes domino = control.Controller.reduceDominoes(toReduce);
     		this.dominoes.set(index, domino);
     		
-    		((Text)piece.getChildren().get(Dominoes.GRAPH_ID_ROW)).setText(domino.getIdRow());
-    		((Text)piece.getChildren().get(Dominoes.GRAPH_ID_ROW)).setFont(new Font(Dominoes.GRAPH_AGGREG_FONT_SIZE));
-
+    		piece.setRowText(domino.getIdRow(),new Font(DominoView.GRAPH_AGGREG_FONT_SIZE));
+    		
     		if (Configuration.autoSave) {
     			this.saveAndSendToList(piece);
     		}
@@ -875,7 +611,7 @@ public class AreaMove extends Pane {
      *
      * @param piece The piece to animate
      */
-    private void reduceColumns(Group piece) throws IOException {
+    private void reduceColumns(DominoView piece) throws IOException {
     	
         int index = this.pieces.indexOf(piece);
         Dominoes toReduce = this.dominoes.get(index);
@@ -886,11 +622,8 @@ public class AreaMove extends Pane {
         	domino.transpose();
         	this.dominoes.set(index, domino);
         	
-        	Group swap = domino.drawDominoes();
-        	
-        	((Text)piece.getChildren().get(Dominoes.GRAPH_ID_COL)).setText(domino.getIdCol());
-        	((Text)piece.getChildren().get(Dominoes.GRAPH_ID_COL)).setFont(new Font(Dominoes.GRAPH_AGGREG_FONT_SIZE));
-        	
+            piece.setColText(domino.getIdCol(),new Font(DominoView.GRAPH_AGGREG_FONT_SIZE));
+            
         	if (Configuration.autoSave) {
         		this.saveAndSendToList(piece);
         	}
@@ -909,8 +642,6 @@ public class AreaMove extends Pane {
      * @throws IOException 
      */
     private void confidence(Group piece) throws IOException {
-
-        Color colorHistoric;
         int index = this.pieces.indexOf(piece);
         Dominoes toConfidence = this.dominoes.get(index);
         Dominoes domino = control.Controller.confidence(toConfidence);
@@ -940,5 +671,12 @@ public class AreaMove extends Pane {
     
     private void drawTree(Dominoes domino) {
         App.drawTree(domino);
+    }
+    
+    /**
+     * This function is called to change the parts color
+     */
+    void changeColor() {
+        this.pieces.forEach(dominoView -> dominoView.changeColor());
     }
 }

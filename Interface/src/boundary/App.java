@@ -1,7 +1,6 @@
 package boundary;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -27,7 +26,6 @@ import javax.swing.JFrame;
 
 import cern.colt.Arrays;
 import control.Controller;
-import dao.DominoesSQLDao;
 import domain.Configuration;
 import domain.Dominoes;
 

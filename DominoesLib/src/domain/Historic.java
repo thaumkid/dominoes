@@ -1,10 +1,13 @@
 package domain;
 
-public class Historic {
+import java.io.Serializable;
 
-    private static final String separatorLeft = "<";
+public class Historic implements Serializable {
+    private static final long serialVersionUID = 1L;
+    
+    private static final String separatorLeft  = "<";
     private static final String separatorRight = ">";
-    private static final String itemSeparator = ",";
+    private static final String itemSeparator  = ",";
 
     private String rightItem;
     private String leftItem;
@@ -308,5 +311,19 @@ public class Historic {
             return result;
         }
         return false;
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null || !(obj instanceof Historic))
+            return false;
+        Historic o = (Historic)obj;
+        return o.length==length && o.toString().equals(toString())
+            && (leftItem == null ? leftItem == o.leftItem : leftItem.equals(o.leftItem))
+            && (rightItem == null ? rightItem == o.rightItem : rightItem.equals(o.rightItem))
+            && (dominoLeft == null ? dominoLeft == o.dominoLeft : dominoLeft.equals(o.dominoLeft))
+            && (dominoRight == null ? dominoRight == o.dominoRight : dominoRight.equals(o.dominoRight))
+            && (historicLeft == null ? historicLeft == o.historicLeft : historicLeft.equals(o.historicLeft))
+            && (historicRight == null ? historicRight == o.historicRight : historicRight.equals(o.historicRight));
     }
 }

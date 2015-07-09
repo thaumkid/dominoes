@@ -173,6 +173,7 @@ public class DominoesMenuBar extends MenuBar {
                     App.saveAll();
                 } catch (IOException ex) {
                     System.err.println(ex.getMessage());
+                    ex.printStackTrace();
                 }
             }
         });
@@ -195,6 +196,7 @@ public class DominoesMenuBar extends MenuBar {
                     System.exit(0);
                 } catch (IOException ex) {
                     System.err.println(ex.getMessage());
+                    ex.printStackTrace();
                 }
             }
         });
@@ -276,8 +278,10 @@ public class DominoesMenuBar extends MenuBar {
 				sdf.parse(begin);
 				sdf.parse(end);
 			}catch(ParseException e){
-				System.err.println("format not found");
-				throw e;
+				System.err.println("format not found: " + begin + " and " + end);
+				begin = Configuration.beginDate;
+				end = Configuration.endDate;
+//				throw e;
 			}
 		}
 		

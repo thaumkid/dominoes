@@ -10,7 +10,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.zip.CRC32;
 
-import org.la4j.matrix.Matrix;
+import org.la4j.Matrix;
 import org.la4j.matrix.functor.MatrixProcedure;
 import org.la4j.matrix.sparse.CRSMatrix;
 

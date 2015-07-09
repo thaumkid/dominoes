@@ -66,7 +66,7 @@ public class Controller {
      * @throws Exception 
      */
     public static void loadConfiguration() throws IOException, Exception{
-    	new Configuration();
+//    	new Configuration();
         new ConfigurationFile().loadConfigurationFile();
     }
 

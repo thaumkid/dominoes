@@ -5,6 +5,7 @@ package boundary;
  */
 
 import domain.Configuration;
+import domain.DominoView;
 import domain.Dominoes;
 
 import java.io.IOException;
@@ -12,20 +13,21 @@ import java.util.ArrayList;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.scene.Cursor;
 import javafx.scene.Group;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.ListView;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.Tooltip;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.Dragboard;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.shape.Shape;
+import javafx.scene.input.TransferMode;
 
 //@SuppressWarnings("restriction")
-public class ListViewDominoes extends ListView<Group> {
+public class ListViewDominoes extends ListView<DominoView> {
 
-    private ObservableList<Group> pieces;
+    private ObservableList<DominoView> pieces;
     private ArrayList<Dominoes> dominoes;
 
     private double padding = 20;
@@ -36,30 +38,78 @@ public class ListViewDominoes extends ListView<Group> {
      * This class builder initialize this list and your arrays with values
      * defined in the parameter Array.
      *
-     * @param array Values to initialize this list and your array
+     * @param array
+     *            Values to initialize this list and your array
      */
     public ListViewDominoes(ArrayList<Dominoes> array) {
         this.visibilityHistoric = true;
 
-        this.pieces = FXCollections.observableList(new ArrayList<Group>());
+        this.pieces = FXCollections.observableList(new ArrayList<DominoView>());
         this.dominoes = new ArrayList<>();
 
-        
         if (array != null) {
             for (Dominoes dom : array) {
-                this.add(dom);
+                if (!add(dom))
+                    System.out.println("Not added: " + dom);
             }
-
         }
-        
 
         this.setItems(this.pieces);
+
+        setOnDragDropped(event -> {
+            boolean success = false;
+            if (event.getDragboard().hasContent(Dominoes.clipboardFormat)) {
+                success = true;
+                ObservableList<DominoView> items = getItems();
+                Object content = event.getDragboard().getContent(Dominoes.clipboardFormat);
+                DominoView selectedItem = ListViewDominoes.this.getSelectionModel().getSelectedItem();
+                int toIdx = items.indexOf(selectedItem);
+                int fromIdx = dominoes.indexOf(content);
+                if (fromIdx >= 0) { // move an item already contained in list
+                    moveItems(fromIdx, toIdx - fromIdx);
+                    // System.out.println("Moved item from idx " + fromIdx + "
+                    // to " + toIdx);
+                } else if (content instanceof Dominoes) {
+                    add((Dominoes) content);
+                    moveItems(dominoes.size() - 1, toIdx - dominoes.size() + 1);
+                    // System.out.println("Added new domino: " + content
+                    // + " with cardinality " +
+                    // ((Matrix2DJava)((Dominoes)content).getMat()).getMatrix().sum());
+                } else {
+                    System.out.println("Drop failed..");
+                    success = false;
+                }
+            }
+            event.setDropCompleted(success);
+            event.consume();
+        });
+        
+//        setOnDragOver(event -> {
+//            if (event.getDragboard().hasContent(Dominoes.clipboardFormat)) {
+//                event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
+//            }
+//            for (DominoView view : pieces) {
+//                System.out.println(view.getBoundsInParent()// + " and " + view.getBoundsInLocal()
+//                  + " and " + event.getX() + "," + event.getY()
+////                  + " and " + event.getSceneX() + "," + event.getSceneY()
+//                  );
+//                if (view.getBoundsInParent().contains(event.getX(),event.getY())) {
+//                    int index = pieces.indexOf(view);
+//                    if (index >= 0) {
+//                        ListViewDominoes.this.getSelectionModel().clearAndSelect(index);
+//                        break;
+//                    }
+//                }
+//            }
+//            event.consume();
+//        });
     }
 
     /**
      * This function adds a Dominoes in the list
      *
-     * @param domino The dominoes to resultMultiplication
+     * @param domino
+     *            The dominoes to resultMultiplication
      * @return true in affirmative case
      * @throws IllegalArgumentException
      */
@@ -70,18 +120,19 @@ public class ListViewDominoes extends ListView<Group> {
         if (domino == null) {
             return result;
         }
-
-        if (isAdded(domino)) {
+        // modify the equals() method in Dominoes if different behavior is
+        // desired
+        if (dominoes.contains(domino)) {
             return result;
         }
 
-        Group group = domino.drawDominoes();
-        group.getChildren().get(Dominoes.GRAPH_HISTORIC).setVisible(visibilityHistoric);
-        
-        // TODO do we really need handlers for every item in the list? Can't we push this up a level?
+        DominoView group = domino.drawDominoes();
+        group.setVisible(DominoView.Views.GRAPH_HISTORIC, true);
+
         addMouseHandlers(domino, group);
+        // TODO do we really need handlers for every item in the list? Can't we
+        // push this up a level?
         addMenuHandlers(group);
-        
 
         this.dominoes.add(domino);
 
@@ -90,33 +141,14 @@ public class ListViewDominoes extends ListView<Group> {
         result = true;
         return result;
     }
-    
-	private void addMouseHandlers(Dominoes domino, Group group) {
-        Tooltip tooltip = new Tooltip(domino.getMat().getMatrixDescriptor().getRowType()
-        		+ " x "
-        		+ domino.getMat().getMatrixDescriptor().getColType()
-        		+ " : "
-        		+ domino.getMat().getMatrixDescriptor().getNumRows()
-        		+ " x "
-        		+ domino.getMat().getMatrixDescriptor().getNumCols());
+
+    private void addMouseHandlers(Dominoes domino, DominoView group) {
+        Tooltip tooltip = new Tooltip(domino.getMat().getMatrixDescriptor().getRowType() + " x "
+                + domino.getMat().getMatrixDescriptor().getColType() + " : "
+                + domino.getMat().getMatrixDescriptor().getNumRows() + " x "
+                + domino.getMat().getMatrixDescriptor().getNumCols());
         Tooltip.install(group, tooltip);
 
-        group.setOnMouseEntered(event -> cursorProperty().set(Cursor.OPEN_HAND));
-        group.setOnMousePressed(event -> cursorProperty().set(Cursor.CLOSED_HAND));
-        group.setOnMouseReleased(event -> {
-            if (cursorProperty().get() == Cursor.CLOSED_HAND) {
-                int indexTargetRelative = (event.getY() < 0) ? (int) ((event.getY() + (-1) * (Dominoes.GRAPH_HEIGHT + 6)) / (Dominoes.GRAPH_HEIGHT + 6)) : (int) (event.getY() / (Dominoes.GRAPH_HEIGHT + 6));
-                if (pieces == null) {
-                    return;
-                }
-                int indexSource = getSelectionModel().getSelectedIndex();
-                moveItems(indexSource, indexTargetRelative);
-            }
-            cursorProperty().set(Cursor.OPEN_HAND);
-        });
-        group.setOnMouseExited(event -> cursorProperty().set(
-            cursorProperty().get() == Cursor.CLOSED_HAND ?
-                Cursor.DEFAULT : cursorProperty().get()));
         group.setOnMouseClicked(event -> {
             if (event.getButton().equals(MouseButton.PRIMARY)) {
                 if (event.getClickCount() == 2) {
@@ -125,7 +157,29 @@ public class ListViewDominoes extends ListView<Group> {
                 }
             }
         });
-	}
+
+        group.setOnDragDetected(event -> {
+            Dragboard dragboard = startDragAndDrop(TransferMode.MOVE);
+            ClipboardContent content = new ClipboardContent();
+            content.put(Dominoes.clipboardFormat, domino);
+            dragboard.setDragView(group.snapshot(null, null));
+            dragboard.setDragViewOffsetX(event.getX());
+            dragboard.setDragViewOffsetY(event.getY());
+            dragboard.setContent(content);
+            event.consume();
+        });
+
+        group.setOnDragOver(event -> {
+            if (event.getGestureSource() != group && event.getDragboard().hasContent(Dominoes.clipboardFormat)) {
+                event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
+            }
+            int index = ListViewDominoes.this.getItems().indexOf((event.getGestureTarget()));
+            if (index >= 0) {
+                ListViewDominoes.this.getSelectionModel().clearAndSelect(index);
+            }
+            event.consume();
+        });
+    }
 
     private void addMenuHandlers(Group group) {
         ContextMenu minimenu = new ContextMenu();
@@ -138,10 +192,11 @@ public class ListViewDominoes extends ListView<Group> {
         });
         minimenu.setOnAction(event -> {
             // choose menu item multiply
-            if (((MenuItem) event.getTarget()).getText().equals(menuItemToAreaMove.getText())) {
+            String text = ((MenuItem) event.getTarget()).getText();
+            if (text.equals(menuItemToAreaMove.getText())) {
                 System.out.println("copy to area move");
                 copyFromListToAreaMove(group);
-            } else if (((MenuItem) event.getTarget()).getText().equals(menuItemRemove.getText())) {
+            } else if (text.equals(menuItemRemove.getText())) {
                 System.out.println("removing");
                 try {
                     removeFromListAndArea(group);
@@ -160,40 +215,13 @@ public class ListViewDominoes extends ListView<Group> {
         });
 
         minimenu.getItems().addAll(menuItemToAreaMove, menuItemRemove);
-	}
-
-	/**
-     * This function checks if a domino parameters is added in the list
-     *
-     * @param domino The domino to check
-     * @return true, in affirmative case
-     * @throws IllegalArgumentException
-     */
-    private boolean isAdded(Dominoes domino) throws IllegalArgumentException {
-        if (domino == null) {
-            throw new IllegalArgumentException("list not initialized");
-        }
-        for (Dominoes d : this.dominoes) {
-            if (d.getIdRow().equals(domino.getIdRow())
-                    && d.getIdCol().equals(domino.getIdCol())
-                    && domino.getHistoric().toString().equals(d.getHistoric().toString())) {
-                return true;
-            }
-        }
-        return false;
     }
-
+    
     /**
      * This function is called to change the parts color
      */
     void changeColor() {
-        for (Group group : this.pieces) {
-            ((Shape) group.getChildren().get(Dominoes.GRAPH_FILL)).setFill(Dominoes.COLOR_BACK);
-            ((Shape) group.getChildren().get(Dominoes.GRAPH_LINE)).setFill(Dominoes.COLOR_BORDER);
-            ((Shape) group.getChildren().get(Dominoes.GRAPH_BORDER)).setFill(Dominoes.COLOR_BORDER);
-            ((Shape) group.getChildren().get(Dominoes.GRAPH_ID_ROW)).setFill(Dominoes.COLOR_NORMAL_FONT);
-            ((Shape) group.getChildren().get(Dominoes.GRAPH_ID_COL)).setFill(Dominoes.COLOR_NORMAL_FONT);
-        }
+        this.pieces.forEach(dominoView -> dominoView.changeColor());
     }
 
     /**
@@ -210,7 +238,8 @@ public class ListViewDominoes extends ListView<Group> {
     /**
      * This Function copy from this list, to area move, a domino.
      *
-     * @param group domino to copy
+     * @param group
+     *            domino to copy
      */
     private void copyFromListToAreaMove(Group group) {
 
@@ -223,13 +252,15 @@ public class ListViewDominoes extends ListView<Group> {
     /**
      * This function is used to move a selected domino in the list.
      *
-     * @param indexSource The selected index. The dominoes in this position will
-     * suffer a change in their position
-     * @param indexTargetRelative The position target.
+     * @param indexSource
+     *            The selected index. The dominoes in this position will suffer
+     *            a change in their position
+     * @param indexTargetRelative
+     *            The position target.
      */
     public void moveItems(int indexSource, int indexTargetRelative) {
         int indexTarget = indexSource + indexTargetRelative;
-//        int indexTarget = indexTargetRelative;
+        // int indexTarget = indexTargetRelative;
 
         // catch index selected
         if (this.pieces == null || this.dominoes == null) {
@@ -237,14 +268,12 @@ public class ListViewDominoes extends ListView<Group> {
         }
 
         if ((indexTarget < 0 || indexTarget >= this.pieces.size())
-                || (indexSource < 0 || indexSource >= this.pieces.size())
-                || (indexSource == indexTarget)) {
+                || (indexSource < 0 || indexSource >= this.pieces.size()) || (indexSource == indexTarget)) {
             return;
         }
 
         if (indexTarget > indexSource) {
-            Group sourceGroup = new Group();
-            sourceGroup = this.pieces.get(indexSource);
+            DominoView sourceGroup = this.pieces.get(indexSource);
             Dominoes sourceDominoes = new Dominoes(Configuration.processingUnit);
             sourceDominoes = this.dominoes.get(indexSource);
 
@@ -257,8 +286,7 @@ public class ListViewDominoes extends ListView<Group> {
             this.dominoes.set(indexTarget, sourceDominoes);
 
         } else if (indexTarget < indexSource) {
-            Group sourceGroup = new Group();
-            sourceGroup = this.pieces.get(indexSource);
+            DominoView sourceGroup = this.pieces.get(indexSource);
             Dominoes sourceDominoes = new Dominoes(Configuration.processingUnit);
             sourceDominoes = this.dominoes.get(indexSource);
 
@@ -288,31 +316,30 @@ public class ListViewDominoes extends ListView<Group> {
     /**
      * This function is used to define the visibility of historic
      *
-     * @param visibility True to define visible the historic
+     * @param visibility
+     *            True to define visible the historic
      */
     void setVisibleHistoric() {
-    	boolean visibility = this.visibilityHistoric;
-        for (Group group : pieces) {
-            group.getChildren().get(Dominoes.GRAPH_HISTORIC).setVisible(visibility);
-        }
+        boolean vis = this.visibilityHistoric;
+        pieces.forEach(dominoView -> dominoView.setVisible(DominoView.Views.GRAPH_HISTORIC, vis));
     }
-    
+
     /**
      * This function is used to define the visibility of type
      *
-     * @param visibility True to define visible the type
+     * @param visibility
+     *            True to define visible the type
      */
     void setVisibleType() {
-    	boolean visibility = Configuration.visibilityType;
-        for (Group group : pieces) {
-            group.getChildren().get(Dominoes.GRAPH_TYPE).setVisible(visibility);
-        }
+        boolean vis = Configuration.visibilityType;
+        pieces.forEach(dominoView -> dominoView.setVisible(DominoView.Views.GRAPH_HISTORIC,vis));
     }
 
     /**
      * This function remove only a element this list.
      *
-     * @param group element to remove
+     * @param group
+     *            element to remove
      * @return true in affimative case
      */
     public boolean remove(Group group) {
@@ -329,7 +356,8 @@ public class ListViewDominoes extends ListView<Group> {
     /**
      * This function remove the element of the list and of the move area
      *
-     * @param group Element to remove
+     * @param group
+     *            Element to remove
      * @return true, in affirmative case
      * @throws IOException
      */

@@ -1,19 +1,25 @@
 package arch;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.la4j.matrix.SparseMatrix;
 import org.la4j.matrix.functor.MatrixProcedure;
+import org.la4j.matrix.sparse.CCSMatrix;
 import org.la4j.matrix.sparse.CRSMatrix;
 
-
-public class Matrix2DJava implements IMatrix2D {	
-
-	private CRSMatrix data;
+public class Matrix2DJava implements IMatrix2D, Serializable {	
+    private static final long serialVersionUID = 1L;
+    
+    private transient SparseMatrix data;
+    
+    private MatrixDescriptor matrixDescriptor;
 	
-	private MatrixDescriptor matrixDescriptor;
-	
-	public MatrixDescriptor getMatrixDescriptor() {		
+	public MatrixDescriptor getMatrixDescriptor() {
 		return matrixDescriptor;
 	}
 
@@ -59,7 +65,7 @@ public class Matrix2DJava implements IMatrix2D {
 		
 		Matrix2DJava otherJava = (Matrix2DJava)other; 
 		
-		result.data = (CRSMatrix) data.multiply(otherJava.data);
+		result.data = (SparseMatrix) data.multiply(otherJava.data);
 		
 		
 		return result;
@@ -77,7 +83,7 @@ public class Matrix2DJava implements IMatrix2D {
 			_newDescriptor.AddColDesc(this.matrixDescriptor.getRowAt(i));
 		
 		Matrix2DJava transpose = new Matrix2DJava(_newDescriptor);
-		transpose.data = (CRSMatrix) data.transpose();
+		transpose.data = (SparseMatrix) data.transpose();
 		
 		return transpose;
 	}
@@ -256,5 +262,56 @@ public class Matrix2DJava implements IMatrix2D {
 		confidenceM.setData(newValues);
 		
 		return confidenceM;
-	}		
+	}
+	
+	public SparseMatrix getMatrix() {
+	    return data;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+        if (obj == null || !(obj instanceof Matrix2DJava))
+            return false;
+        Matrix2DJava o = (Matrix2DJava) obj;
+        // good story here -- la4j sparse matrix serialization had a bug before version 5.0
+        // the print statements below helped track that
+//        System.out.println("Rows equal? " + data.equals(o.data));
+//        System.out.println(data.cardinality() + " and " + data.rows() + " x " + data.columns());
+//        System.out.println(o.data.cardinality() + " and " + o.data.rows() + " x " + o.data.columns());
+//        System.out.println(data.getColumn(0));
+//        System.out.println(o.data.getColumn(0));
+//        System.out.println(data.sum());
+//        System.out.println(o.data.sum());
+//        System.out.println(data.subtract(o.data).sum());
+//        Debug();
+//        System.out.println("Other:");
+//        o.Debug();
+        return data.equals(o.data);
+	}
+	
+//	@Override
+//	public int hashCode() {
+//	    
+//	}
+    
+    /**
+    * Custom deserialization is needed for the matrix.
+    */
+    private void readObject(ObjectInputStream aStream) throws IOException, ClassNotFoundException {
+      aStream.defaultReadObject();
+      byte[] bin = (byte[]) aStream.readObject();
+      try { // transpose annoyingly switches between matrix types in newer la4j implementations
+          data = CRSMatrix.fromBinary(bin);
+      } catch (IllegalArgumentException e) {
+          data = CCSMatrix.fromBinary(bin);
+      }
+    }
+
+    /**
+    * Custom serialization is needed for the matrix.
+    */
+    private void writeObject(ObjectOutputStream aStream) throws IOException {
+      aStream.defaultWriteObject();
+      aStream.writeObject(data.toBinary());
+    }
 }
