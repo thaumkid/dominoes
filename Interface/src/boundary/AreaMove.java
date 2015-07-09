@@ -378,15 +378,6 @@ public class AreaMove extends Pane {
                     this.indexSecondOperatorMultiplication = index2;
 
                     return true;
-                } else {
-                    g1.colorNoOperateCol();
-                    g1.colorNormalRow();
-                    g2.colorNoOperateRow();
-                    g2.colorNormalCol();
-
-                    this.indexFirstOperatorMultiplication = -1;
-                    this.indexSecondOperatorMultiplication = -1;
-                    return false;
                 }
             } else {
                 if (d1.getIdRow().equals(d2.getIdCol())
@@ -402,14 +393,6 @@ public class AreaMove extends Pane {
                     this.indexSecondOperatorMultiplication = index1;
 
                     return true;
-                } else {
-                    g1.colorNoOperateRow();
-                    g1.colorNormalCol();
-                    g2.colorNoOperateCol();
-                    g2.colorNormalRow();
-                    this.indexFirstOperatorMultiplication = -1;
-                    this.indexSecondOperatorMultiplication = -1;
-                    return false;
                 }
             }
         }
